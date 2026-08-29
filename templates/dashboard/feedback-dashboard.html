@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>正杰全球聘 · 原型反馈与 Agent 闭环排障中枢</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐞</text></svg>">
+  <style>
+    :root {
+      --bg-base: #090e1a;
+      --bg-surface: #111a2e;
+      --bg-card: #162238;
+      --bg-card-hover: #1c2b47;
+      --border-subtle: #233554;
+      --border-active: #38bdf8;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --primary: #38bdf8;
+      --primary-glow: rgba(56, 189, 248, 0.25);
+      --accent-p0: #ef4444;
+      --accent-p1: #f97316;
+      --accent-p2: #f59e0b;
+      --accent-p3: #3b82f6;
+      --accent-success: #10b981;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --radius-xl: 22px;
+      --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Noto Sans SC", sans-serif;
+      background-color: var(--bg-base);
+      color: var(--text-main);
+      line-height: 1.5;
+      padding: 24px;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* 顶部导航与总控看板 */
+    header {
+      background: linear-gradient(135deg, #111a2e 0%, #0d2137 100%);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 20px 28px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-icon {
+      font-size: 28px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .brand-text h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      background: linear-gradient(90deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .brand-text p {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* KPI 统计卡片栅格 */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+    }
+
+    .kpi-card {
+      background: rgba(22, 34, 56, 0.6);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .kpi-card:hover {
+      background: rgba(28, 43, 71, 0.8);
+      border-color: var(--border-active);
+      transform: translateY(-2px);
+    }
+    .kpi-card.active-filter {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 1px var(--primary), 0 4px 14px var(--primary-glow);
+      background: rgba(56, 189, 248, 0.1);
+    }
+    .kpi-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .kpi-value {
+      font-size: 24px;
+      font-weight: 800;
+      color: #ffffff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .kpi-p0 { color: var(--accent-p0); }
+    .kpi-p1 { color: var(--accent-p1); }
+    .kpi-pending { color: #f59e0b; }
+    .kpi-resolved { color: var(--accent-success); }
+
+    /* 过滤与搜索工具栏 */
+    .toolbar {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 14px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      flex: 1;
+    }
+
+    .search-box {
+      position: relative;
+      min-width: 240px;
+      flex: 1;
+      max-width: 380px;
+    }
+    .search-box input {
+      width: 100%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 8px 12px 8px 34px;
+      font-size: 13px;
+      color: #fff;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .search-box input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+    .search-icon {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+      color: var(--text-dim);
+      pointer-events: none;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      padding: 3px;
+      border-radius: var(--radius-md);
+    }
+    .filter-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .filter-btn:hover { color: #fff; }
+    .filter-btn.active {
+      background: #1e293b;
+      color: var(--primary);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+
+    .terminal-select {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-main);
+      padding: 7px 12px;
+      border-radius: var(--radius-md);
+      font-size: 12.5px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* 按钮样式规范 */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      font-size: 12.5px;
+      font-weight: 600;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+    .btn-primary:hover {
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.45);
+      transform: translateY(-1px);
+    }
+    .btn-outline {
+      background: rgba(22, 34, 56, 0.8);
+      border-color: var(--border-subtle);
+      color: var(--text-main);
+    }
+    .btn-outline:hover {
+      background: #1c2b47;
+      border-color: var(--text-muted);
+      color: #fff;
+    }
+    .btn-success {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.35);
+      color: #34d399;
+    }
+    .btn-success:hover {
+      background: rgba(16, 185, 129, 0.25);
+    }
+    .btn-prompt {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+      border-color: #6366f1;
+      color: #c7d2fe;
+    }
+    .btn-prompt:hover {
+      background: linear-gradient(135deg, #312e81 0%, #4338ca 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+      transform: translateY(-1px);
+    }
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.2);
+    }
+    .btn-sm {
+      padding: 5px 9px;
+      font-size: 11.5px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* 反馈卡片网格 */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      gap: 20px;
+    }
+
+    .feedback-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+    .feedback-card:hover {
+      border-color: #3b82f6;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+      transform: translateY(-3px);
+    }
+    .feedback-card.is-resolved {
+      opacity: 0.78;
+      border-color: rgba(16, 185, 129, 0.3);
+      background: rgba(17, 26, 46, 0.8);
+    }
+    .feedback-card.is-resolved:hover {
+      opacity: 1;
+    }
+
+    .card-top {
+      padding: 14px 18px;
+      background: rgba(17, 26, 46, 0.95);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      letter-spacing: 0.2px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .pill-p0 { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+    .pill-p1 { background: #ffedd5; color: #c2410c; border: 1px solid #fdba74; }
+    .pill-p2 { background: #fef3c7; color: #b45309; border: 1px solid #fcd34d; }
+    .pill-p3 { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    
+    .pill-status-pending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .pill-status-resolved { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+    
+    .pill-type { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
+
+    .card-id-time {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-family: ui-monospace, SFMono-Regular, monospace;
+    }
+
+    .card-main {
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #ffffff;
+      line-height: 1.4;
+    }
+
+    .card-context-row {
+      font-size: 11.5px;
+      color: #38bdf8;
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px dashed rgba(56, 189, 248, 0.25);
+      border-radius: var(--radius-sm);
+      padding: 5px 9px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      word-break: break-all;
+    }
+
+    /* 快照与描述并排展示 */
+    .card-content-layout {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .card-snapshot-wrap {
+      width: 110px;
+      height: 75px;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      flex-shrink: 0;
+      border: 1px solid #334155;
+      background: #090e1a;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s;
+    }
+    .card-snapshot-wrap:hover {
+      border-color: var(--primary);
+      transform: scale(1.04);
+      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.2);
+    }
+    .card-snapshot-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top;
+      display: block;
+    }
+    .card-snapshot-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: #fff;
+      font-weight: 600;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .card-snapshot-wrap:hover .card-snapshot-overlay { opacity: 1; }
+
+    .card-desc-box {
+      flex: 1;
+      font-size: 12.5px;
+      color: #cbd5e1;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: var(--radius-md);
+      padding: 8px 10px;
+      line-height: 1.5;
+      max-height: 120px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    /* 折叠抽屉：操作日志与系统日志 */
+    .logs-accordion {
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      background: #0f172a;
+      overflow: hidden;
+    }
+    .logs-acc-header {
+      padding: 6px 10px;
+      background: #141f36;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+    .logs-acc-header:hover { color: #fff; background: #1a2846; }
+    .logs-acc-body {
+      padding: 8px 10px;
+      max-height: 90px;
+      overflow-y: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 10.5px;
+      line-height: 1.4;
+      display: none;
+    }
+    .logs-acc-body.open { display: block; }
+    .log-row {
+      display: flex;
+      gap: 6px;
+      padding: 2px 0;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+    }
+    .log-tag-action { color: #38bdf8; font-weight: 700; }
+    .log-tag-err { color: #f87171; font-weight: 700; }
+
+    /* 解决状态结案说明 */
+    .resolution-box {
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: var(--radius-md);
+      padding: 8px 10px;
+      font-size: 11.5px;
+      color: #34d399;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .card-footer {
+      padding: 12px 18px;
+      background: rgba(17, 26, 46, 0.95);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .card-actions-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-actions-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* 全屏 Lightbox 弹窗 */
+    #lightbox-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      backdrop-filter: blur(10px);
+      z-index: 99999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    #lightbox-modal.active { display: flex; }
+    .lightbox-wrapper {
+      position: relative;
+      max-width: 94vw;
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .lightbox-image {
+      max-width: 100%;
+      max-height: 82vh;
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .lightbox-close {
+      position: absolute;
+      top: -16px;
+      right: -16px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #fff;
+      color: #0f172a;
+      border: none;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    /* 结案反馈模态层 */
+    #resolve-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(6px);
+      z-index: 99998;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    #resolve-modal.active { display: flex; }
+    .modal-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 520px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: var(--shadow-card);
+    }
+
+    /* Toast 通知 */
+    #toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #0d2137 0%, #1e3a5f 100%);
+      border: 1px solid #38bdf8;
+      color: #ffffff;
+      padding: 10px 22px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 100000;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      display: none;
+      animation: fadeIn 0.2s ease-out;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translate(-50%, 10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+    /* 空状态 */
+    .empty-state {
+      grid-column: 1 / -1;
+      padding: 60px 20px;
+      text-align: center;
+      background: var(--bg-surface);
+      border: 1px dashed var(--border-subtle);
+      border-radius: var(--radius-lg);
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 768px) {
+      body { padding: 12px; }
+      header { padding: 16px; }
+      .cards-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 顶部中枢看板 -->
+  <header>
+    <div class="header-top">
+      <div class="brand-title">
+        <div class="brand-icon">🐞</div>
+        <div class="brand-text">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <h1 style="margin:0;">正杰全球聘 · 原型反馈与 Agent 闭环排障中枢</h1>
+            <span style="background:#10b981; color:#fff; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px;">V4.5 最新版</span>
+          </div>
+          <p style="margin-top:4px;">多端真实快照 | 操作轨迹与系统诊断 | 智能生成 MCP 修复 Prompt | 双向实时同步</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <a class="btn btn-outline" href="index.html" style="text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
+          🏠 返回五端发布大厅
+        </a>
+        <button class="btn btn-danger" id="btn-clear-all" title="清空全部测试数据，重置本地与云端数据库">🧹 清空全部测试数据</button>
+        <button class="btn btn-primary" id="btn-sync-all" title="与云端/测试服务器双向拉取与推送">
+          🔄 立即全量双向同步
+        </button>
+        <button class="btn btn-outline" id="btn-export-md" title="导出 Markdown 格式清单">
+          📋 导出 Markdown
+        </button>
+        <button class="btn btn-outline" id="btn-export-json" title="导出 JSON 数据包">
+          💾 导出 JSON
+        </button>
+        <a href="/mcp" target="_blank" class="btn btn-outline">
+          🌐 远程 MCP 信息
+        </a>
+        <a href="/" class="btn btn-outline" style="border-color: #38bdf8; color: #38bdf8;">
+          🖥️ 进入发布大厅
+        </a>
+      </div>
+    </div>
+
+    <!-- 实时指标统计卡片 -->
+    <div class="kpi-grid">
+      <div class="kpi-card active-filter" data-kpi="all">
+        <div class="kpi-label"><span>📦 全部反馈总数</span> <span>ALL</span></div>
+        <div class="kpi-value" id="val-total">0</div>
+      </div>
+      <div class="kpi-card" data-kpi="pending">
+        <div class="kpi-label"><span>⏳ 待解决 (待排障)</span> <span>PENDING</span></div>
+        <div class="kpi-value kpi-pending" id="val-pending">0</div>
+      </div>
+      <div class="kpi-card" data-kpi="p0p1">
+        <div class="kpi-label"><span>🚨 P0/P1 核心阻断</span> <span>HIGH</span></div>
+        <div class="kpi-value kpi-p0" id="val-high-sev">0</div>
+      </div>
+      <div class="kpi-card" data-kpi="resolved">
+        <div class="kpi-label"><span>✅ 已闭环解决</span> <span>DONE</span></div>
+        <div class="kpi-value kpi-resolved" id="val-resolved">0</div>
+      </div>
+      <div class="kpi-card" data-kpi="snapshots">
+        <div class="kpi-label"><span>📸 真实物理快照</span> <span>PNG</span></div>
+        <div class="kpi-value" id="val-snaps" style="color:#38bdf8;">0</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 过滤与搜索工具栏 -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="搜索标题、描述、模块、ID 或人员...">
+      </div>
+
+      <div class="filter-group">
+        <button class="filter-btn active" data-status="all">全部状态</button>
+        <button class="filter-btn" data-status="pending">待解决</button>
+        <button class="filter-btn" data-status="resolved">已完成</button>
+      </div>
+
+      <div class="filter-group">
+        <button class="filter-btn active" data-sev="all">全部级别</button>
+        <button class="filter-btn" data-sev="P0" style="color:#f87171;">P0 紧急</button>
+        <button class="filter-btn" data-sev="P1" style="color:#fb923c;">P1 核心</button>
+        <button class="filter-btn" data-sev="P2" style="color:#fbbf24;">P2 一般</button>
+        <button class="filter-btn" data-sev="P3" style="color:#60a5fa;">P3 优化</button>
+      </div>
+
+      <select class="terminal-select" id="terminal-filter">
+        <option value="all">📱 全部端 / 模块</option>
+        <option value="求职">求职者小程序端</option>
+        <option value="经纪人">C端人才经纪人端</option>
+        <option value="企业">B端企业小程序端</option>
+        <option value="管理后台">B端Web管理后台</option>
+        <option value="运营">平台运营管理端</option>
+      </select>
+    </div>
+
+    <div>
+      <span style="font-size:12px; color:var(--text-muted);" id="filter-result-count">共筛选出 0 条记录</span>
+    </div>
+  </div>
+
+  <!-- 反馈列表网格 -->
+  <div class="cards-grid" id="cards-container">
+    <div class="empty-state">正在加载反馈数据...</div>
+  </div>
+
+  <!-- 全屏 Lightbox 弹窗 -->
+  <div id="lightbox-modal">
+    <div class="lightbox-wrapper">
+      <button class="lightbox-close" id="btn-close-lightbox">✕</button>
+      <img src="" id="lightbox-img" class="lightbox-image" alt="真实快照高清原图">
+      <div style="color:#fff; font-size:13px; font-weight:600;" id="lightbox-caption">📸 真实页面快照</div>
+    </div>
+  </div>
+
+  <!-- 结案弹窗 (标记为已解决) -->
+  <div id="resolve-modal">
+    <div class="modal-card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="font-size:16px; font-weight:700; color:#34d399;">✅ 标记反馈为已解决 (Resolved)</h3>
+        <button style="background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer;" id="btn-close-resolve">✕</button>
+      </div>
+      <input type="hidden" id="resolve-fb-id">
+      <div>
+        <label style="font-size:12.5px; font-weight:600; color:var(--text-muted); display:block; margin-bottom:6px;">修复结论与验收说明 <span style="color:#ef4444;">*</span></label>
+        <textarea id="resolve-notes" style="width:100%; height:80px; background:#090e1a; border:1px solid var(--border-subtle); border-radius:8px; padding:10px; color:#fff; font-size:13px; outline:none;" placeholder="说明如何修复了该缺陷、修改了哪些文件、验收测试结果..."></textarea>
+      </div>
+      <div>
+        <label style="font-size:12.5px; font-weight:600; color:var(--text-muted); display:block; margin-bottom:6px;">涉及修改的文件 (多行或逗号分隔)</label>
+        <input type="text" id="resolve-files" style="width:100%; background:#090e1a; border:1px solid var(--border-subtle); border-radius:8px; padding:8px 10px; color:#fff; font-size:12.5px; outline:none;" placeholder="如：求职者小程序端/q-wechat-app.html">
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+        <button class="btn btn-outline" id="btn-cancel-resolve">取消</button>
+        <button class="btn btn-primary" id="btn-confirm-resolve" style="background:#10b981;">确认并同步结案</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast 提示 -->
+  <div id="toast">已成功复制提示词！</div>
+
+  
+  <script>
+    let allRecords = [];
+    let currentFilter = {
+      status: 'all',
+      severity: 'all',
+      terminal: 'all',
+      search: ''
+    };
+
+    const LOCAL_STORAGE_KEYS = [
+      'zhengjie_hrm_feedback_logs_v1',
+      'zhengjie_feedback_records_v1',
+      'zhengjie_feedback_records',
+      'zj_feedback_records'
+    ];
+
+    // 格式化相对时间
+    function formatTime(timeStr) {
+      if (!timeStr) return '-';
+      return timeStr;
+    }
+
+    // 弹出 Toast
+    function showToast(msg, duration = 2800) {
+      const t = document.getElementById('toast');
+      if (!t) return;
+      t.innerText = msg;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, duration);
+    }
+
+    // 稳健剪贴板复制工具 (兼容 HTTPS / HTTP / 各种内核及移动端/iframe)
+    async function safeCopyToClipboard(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch (e) {
+          console.warn('navigator.clipboard.writeText failed, fallbacking...', e);
+        }
+      }
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.top = '-9999px';
+        ta.style.left = '-9999px';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const success = document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (success) return true;
+      } catch (err) {
+        console.warn('execCommand copy fallback failed:', err);
+      }
+      try {
+        window.prompt('请按 Ctrl+C / Cmd+C 复制以下 AI 修复指令：', text);
+        return true;
+      } catch(e) {
+        return false;
+      }
+    }
+
+    // 复制针对当前反馈的 Agent 修复 Prompt
+    window.copyAgentFixPromptById = async function(id) {
+      const r = allRecords.find(item => item && item.id === id);
+      if (!r) {
+        showToast('⚠️ 未找到对应的反馈记录: ' + id);
+        return;
+      }
+
+      const opLogsText = (r.operationLogs && r.operationLogs.length > 0)
+        ? r.operationLogs.map(l => `[${l.time}] [${l.type}] ${l.summary}`).join('\n')
+        : '';
+
+      const sysLogsText = (r.systemLogs && r.systemLogs.length > 0)
+        ? r.systemLogs.map(l => `[${l.time}] [${l.level}] ${l.msg}`).join('\n')
+        : '';
+
+      const descText = String(r.description || '无详细描述').split('\n').join('\n> ');
+
+      const currentOrigin = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : 'http://localhost:8888';
+      const remoteImgUrl = `${currentOrigin}/data/snapshots/${r.id}.png`;
+
+      const snapLine = (r.snapshotPath || r.snapshotUrl)
+        ? `【真实页面物理快照】: \`data/snapshots/${r.id}.png\`\n【线上快照网络 URL】: \`${remoteImgUrl}\`\n(提示：可直接使用 view_image 工具读取本地图片路径进行视觉分析与复现对照；若本地尚未下载，MCP 工具 get_feedback 会自动从云端拉取并保存至该路径)\n`
+        : '';
+
+      const opSection = opLogsText
+        ? `【用户操作日志轨迹 (${r.operationLogs.length}步)】:\n\`\`\`text\n${opLogsText}\n\`\`\`\n`
+        : '';
+
+      const sysSection = sysLogsText
+        ? `【系统与控制台诊断日志 (${r.systemLogs.length}条)】:\n\`\`\`text\n${sysLogsText}\n\`\`\`\n`
+        : '';
+
+      const prompt = `请帮我针对正杰全球聘原型系统排查并修复以下用户反馈的缺陷：
+
+【缺陷编号】: \`${r.id}\`
+【优先级/严重度】: ${r.severity || 'P2'} (${r.typeLabel || '问题反馈'})
+【缺陷标题】: ${r.title || '未命名缺陷'}
+【复现页面与模块】: \`${r.pagePath || 'index.html'}\` (视图名称: 《${r.pageTitle || '原型页面'}》 / 模块ID: \`${r.activeModule || '默认'}\`)
+【反馈人】: ${r.contact || '匿名测试人员'}
+【提交时间】: ${r.time || '-'}
+【系统环境】: 视口 ${r.viewport || '未知'}
+
+【用户详细描述与复现说明】:
+> ${descText}
+
+${snapLine}${opSection}${sysSection}=======================================================
+【排障与修复闭环操作要求 (MCP Instructions)】:
+1. 先调用 MCP 工具 \`get_feedback(feedback_id="${r.id}")\` 获取当前反馈完整详情与图片路径；
+2. 若有快照，通过 \`view_image\` 仔细查看缺陷发生的实际视觉形态；
+3. 定位并修改对应前端页面源码（如 \`${r.pagePath || 'q-wechat-app.html'}\`）；
+4. 运行浏览器或自动化脚本进行修复验证；
+5. 验证通过后，调用 MCP 工具 \`resolve_feedback\` 自动结案并同步回传至 Dashboard：
+   \`resolve_feedback(feedback_id="${r.id}", resolution_notes="说明具体修复原因与验收结果", files_modified=["${r.pagePath || '...'}"], resolved_by="AI Agent")\`
+`;
+
+      const ok = await safeCopyToClipboard(prompt);
+      if (ok) {
+        showToast(`🎉 已成功复制【${r.id}】专属 AI 修复 Prompt！直接发送给 Agent 即可全自动排障！`);
+      } else {
+        showToast('⚠️ 复制遇到限制，请重试');
+      }
+    };
+
+    // 加载数据
+    async function loadFeedbackData() {
+      try {
+        const res = await fetch('/api/feedback/list');
+        const data = await res.json();
+        if (data && data.success && Array.isArray(data.data)) {
+          allRecords = data.data;
+          renderMetrics();
+          renderCards();
+        } else {
+          document.getElementById('cards-container').innerHTML = '<div class="empty-state">暂无反馈数据 (等待真实用户在各端提交问题)</div>';
+        }
+      } catch(e) {
+        document.getElementById('cards-container').innerHTML = '<div class="empty-state" style="color:#ef4444;">无法连接反馈接口，请确认 8888 或 23333 服务正常运行</div>';
+      }
+    }
+
+    // 渲染 KPI 指标
+    function renderMetrics() {
+      const total = allRecords.length;
+      const pending = allRecords.filter(r => r.status !== 'resolved').length;
+      const resolved = allRecords.filter(r => r.status === 'resolved').length;
+      const highSev = allRecords.filter(r => (r.severity === 'P0' || r.severity === 'P1') && r.status !== 'resolved').length;
+      const snapshots = allRecords.filter(r => r.snapshotUrl || r.snapshotPath).length;
+
+      document.getElementById('val-total').innerText = total;
+      document.getElementById('val-pending').innerText = pending;
+      document.getElementById('val-resolved').innerText = resolved;
+      document.getElementById('val-high-sev').innerText = highSev;
+      document.getElementById('val-snaps').innerText = snapshots;
+    }
+
+    // 过滤逻辑
+    function getFilteredRecords() {
+      return allRecords.filter(r => {
+        // 状态过滤
+        if (currentFilter.status === 'pending' && r.status === 'resolved') return false;
+        if (currentFilter.status === 'resolved' && r.status !== 'resolved') return false;
+
+        // 严重度过滤
+        if (currentFilter.severity === 'p0p1' && r.severity !== 'P0' && r.severity !== 'P1') return false;
+        if (currentFilter.severity !== 'all' && currentFilter.severity !== 'p0p1' && (r.severity || 'P2') !== currentFilter.severity) return false;
+
+        // 终端过滤
+        if (currentFilter.terminal !== 'all') {
+          const pathText = (r.pagePath || '') + (r.pageTitle || '') + (r.activeModule || '');
+          if (!pathText.includes(currentFilter.terminal)) return false;
+        }
+
+        // 搜索关键词
+        if (currentFilter.search) {
+          const kw = currentFilter.search.toLowerCase();
+          const targetText = `${r.id} ${r.title} ${r.description} ${r.contact} ${r.pagePath} ${r.pageTitle}`.toLowerCase();
+          if (!targetText.includes(kw)) return false;
+        }
+
+        return true;
+      });
+    }
+
+    // 渲染卡片列表
+    function renderCards() {
+      const list = getFilteredRecords();
+      const container = document.getElementById('cards-container');
+      document.getElementById('filter-result-count').innerText = `共筛选出 ${list.length} 条记录 (总共 ${allRecords.length} 条)`;
+
+      if (list.length === 0) {
+        container.innerHTML = '<div class="empty-state">暂无反馈数据 (等待真实用户在各端提交问题，系统将实时呈现)</div>';
+        return;
+      }
+
+      container.innerHTML = list.map((r, idx) => {
+        const isResolved = r.status === 'resolved';
+        const sevCls = 'pill-' + (r.severity || 'P2').toLowerCase();
+        const statusCls = isResolved ? 'pill-status-resolved' : 'pill-status-pending';
+        const statusText = isResolved ? '✅ 已解决' : '⏳ 待解决';
+
+        let snapHtml = '';
+        if (r.snapshotUrl || r.snapshotPath) {
+          const imgUrl = r.snapshotUrl || `/data/snapshots/${r.id}.png`;
+          snapHtml = `
+            <div class="card-snapshot-wrap" onclick="openLightbox('${imgUrl}', '${(r.title || '真实快照').replace(/'/g, "\\\\'")}')" title="点击全屏放大预览真实页面快照">
+              <img src="${imgUrl}" class="card-snapshot-img" alt="快照" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%2270%22><rect fill=%22%231e293b%22 width=%22100%22 height=%2270%22/><text fill=%22%2364748b%22 x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 font-size=%2211%22>快照生成中</text></svg>'">
+              <div class="card-snapshot-overlay">🔍 放大</div>
+            </div>
+          `;
+        }
+
+        const actionLogsCount = (r.operationLogs || []).length;
+        const sysLogsCount = (r.systemLogs || []).length;
+
+        let logsAccordionHtml = '';
+        if (actionLogsCount > 0 || sysLogsCount > 0) {
+          logsAccordionHtml = `
+            <div class="logs-accordion">
+              <div class="logs-acc-header" onclick="toggleAccordion(this)">
+                <span>🕹️ 操作轨迹 (${actionLogsCount}步) / 💻 系统日志 (${sysLogsCount}条)</span>
+                <span class="acc-arrow">▼</span>
+              </div>
+              <div class="logs-acc-body">
+                ${(r.operationLogs || []).map(l => `
+                  <div class="log-row">
+                    <span style="color:#64748b;">${l.time}</span>
+                    <span class="log-tag-action">[${l.type}]</span>
+                    <span style="color:#cbd5e1; word-break:break-all;">${l.summary}</span>
+                  </div>
+                `).join('')}
+                ${(r.systemLogs || []).map(l => `
+                  <div class="log-row">
+                    <span style="color:#64748b;">${l.time}</span>
+                    <span class="${(l.level === 'ERROR' || l.level === 'FATAL') ? 'log-tag-err' : 'log-tag-action'}">[${l.level}]</span>
+                    <span style="color:#cbd5e1; word-break:break-all;">${l.msg}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        let resolutionHtml = '';
+        if (isResolved && r.resolution) {
+          resolutionHtml = `
+            <div class="resolution-box">
+              <div style="font-weight:700;">🎯 解决结论 (${r.resolution.resolvedBy || 'AI Agent'} 于 ${r.resolution.resolvedAt || '-'})</div>
+              <div>${r.resolution.notes || '已修复完成'}</div>
+              ${(r.resolution.filesModified && r.resolution.filesModified.length > 0) ? `
+                <div style="font-size:10.5px; color:#6ee7b7; font-family:monospace; margin-top:2px;">📁 改动文件: ${r.resolution.filesModified.join(', ')}</div>
+              ` : ''}
+            </div>
+          `;
+        }
+
+        return `
+          <div class="feedback-card ${isResolved ? 'is-resolved' : ''}">
+            <div class="card-top">
+              <div class="card-badge-row">
+                <span class="pill ${sevCls}">${r.severity || 'P2'}</span>
+                <span class="pill ${statusCls}">${statusText}</span>
+                <span class="pill pill-type">${r.typeLabel || r.type || '反馈'}</span>
+              </div>
+              <div class="card-id-time">${r.id} · ${r.time ? r.time.split(' ')[0] : ''}</div>
+            </div>
+
+            <div class="card-main">
+              <div class="card-title">${r.title || '未命名反馈'}</div>
+              <div class="card-context-row">
+                <span>📍 <b>${r.pageTitle || '未知页面'}</b></span>
+                <span style="color:var(--text-dim);">|</span>
+                <code>${r.pagePath || ''}</code>
+                ${r.activeModule ? `<span style="color:#94a3b8;">(${r.activeModule})</span>` : ''}
+              </div>
+
+              <div class="card-content-layout">
+                ${snapHtml}
+                <div class="card-desc-box">${r.description || '无详细描述'}</div>
+              </div>
+
+              ${logsAccordionHtml}
+              ${resolutionHtml}
+
+              <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--text-dim);">
+                <span>👤 反馈人: <b>${r.contact || '匿名用户'}</b></span>
+                <span>🖥️ 视口: ${r.viewport ? r.viewport.split(' ')[0] : 'N/A'}</span>
+              </div>
+            </div>
+
+            <div class="card-footer">
+              <div class="card-actions-left">
+                <button class="btn btn-prompt btn-sm" onclick="copyAgentFixPromptById('${r.id}')" title="一键生成并复制专属 AI 修复提示词 (含 MCP 工具链引导)">
+                  🤖 复制 AI 修复 Prompt
+                </button>
+              </div>
+              <div class="card-actions-right">
+                ${isResolved ? `
+                  <button class="btn btn-outline btn-sm" onclick="reopenFeedback('${r.id}')" title="重开此问题">
+                    🔄 重开
+                  </button>
+                ` : `
+                  <button class="btn btn-success btn-sm" onclick="openResolveModal('${r.id}')" title="标记为已解决并记录结论">
+                    ✅ 标记已解决
+                  </button>
+                `}
+                <button class="btn btn-danger btn-sm" onclick="deleteFeedbackItem('${r.id}')" title="删除记录">
+                  🗑️
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 折叠展开日志
+    window.toggleAccordion = function(header) {
+      const body = header.nextElementSibling;
+      const arrow = header.querySelector('.acc-arrow');
+      body.classList.toggle('open');
+      arrow.innerText = body.classList.contains('open') ? '▲' : '▼';
+    };
+
+    // 全屏 Lightbox
+    window.openLightbox = function(url, caption) {
+      const modal = document.getElementById('lightbox-modal');
+      const img = document.getElementById('lightbox-img');
+      const cap = document.getElementById('lightbox-caption');
+      img.src = url;
+      cap.innerText = caption ? `📸 快照预览: ${caption}` : '📸 真实页面快照原图';
+      modal.classList.add('active');
+    };
+
+    document.getElementById('btn-close-lightbox').addEventListener('click', () => {
+      document.getElementById('lightbox-modal').classList.remove('active');
+    });
+    document.getElementById('lightbox-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'lightbox-modal') document.getElementById('lightbox-modal').classList.remove('active');
+    });
+
+    // 解决弹窗
+    window.openResolveModal = function(id) {
+      document.getElementById('resolve-fb-id').value = id;
+      document.getElementById('resolve-notes').value = '';
+      document.getElementById('resolve-files').value = '';
+      document.getElementById('resolve-modal').classList.add('active');
+    };
+
+    document.getElementById('btn-close-resolve').addEventListener('click', () => {
+      document.getElementById('resolve-modal').classList.remove('active');
+    });
+    document.getElementById('btn-cancel-resolve').addEventListener('click', () => {
+      document.getElementById('resolve-modal').classList.remove('active');
+    });
+
+    document.getElementById('btn-confirm-resolve').addEventListener('click', async () => {
+      const id = document.getElementById('resolve-fb-id').value;
+      const notes = document.getElementById('resolve-notes').value.trim();
+      const filesStr = document.getElementById('resolve-files').value.trim();
+
+      if (!notes) {
+        alert('请填写修复结论与验收说明');
+        return;
+      }
+
+      const files = filesStr ? filesStr.split(/[\n,，]+/).map(s => s.trim()).filter(Boolean) : [];
+
+      try {
+        const res = await fetch('/api/feedback/resolve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            feedback_id: id,
+            resolution_notes: notes,
+            files_modified: files,
+            resolved_by: '前端架构师 / AI Agent'
+          })
+        });
+        const data = await res.json();
+        if (data && data.success) {
+          showToast(`✓ 反馈 【${id}】 已成功标记为已解决！`);
+          document.getElementById('resolve-modal').classList.remove('active');
+          loadFeedbackData();
+        } else {
+          alert('标记解决失败: ' + (data.error || '未知错误'));
+        }
+      } catch(e) {
+        alert('网络请求异常: ' + e.message);
+      }
+    });
+
+    // 重开反馈
+    window.reopenFeedback = async function(id) {
+      if (!confirm(`确定要重新打开反馈 【${id}】 吗？`)) return;
+      try {
+        const res = await fetch('/api/feedback/unresolve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ feedback_id: id })
+        });
+        const data = await res.json();
+        if (data && data.success) {
+          showToast(`✓ 反馈 【${id}】 已重置为待解决状态`);
+          loadFeedbackData();
+        }
+      } catch(e) {
+        alert('操作失败: ' + e.message);
+      }
+    };
+
+    // 删除反馈
+    window.deleteFeedbackItem = async function(id) {
+      if (!confirm(`确定要彻底删除反馈 【${id}】 及其快照吗？此操作不可恢复！`)) return;
+      try {
+        const res = await fetch('/api/feedback/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ feedback_id: id, delete_snapshot_file: true })
+        });
+        const data = await res.json();
+        if (data && data.success) {
+          showToast(`✓ 反馈 【${id}】 已删除`);
+          loadFeedbackData();
+        }
+      } catch(e) {
+        alert('删除失败: ' + e.message);
+      }
+    };
+
+    // 绑定「🧹 清空全部测试数据」按钮
+    document.getElementById('btn-clear-all').addEventListener('click', async () => {
+      if (!confirm('⚠️ 警告：确定要彻底清空全部反馈数据与快照吗？\n\n此操作将同时清空服务端数据库以及当前浏览器中残留的所有历史测试数据缓存！')) {
+        return;
+      }
+      try {
+        // 1. 清除当前浏览器 localStorage 缓存
+        for (const k of LOCAL_STORAGE_KEYS) {
+          try { localStorage.removeItem(k); } catch(e) {}
+        }
+        // 2. 清空服务端数据库与快照
+        const res = await fetch('/api/feedback/clear', { method: 'POST' });
+        const data = await res.json();
+        showToast('🎉 本地缓存与服务端数据库已彻底清空重置为 0！', 3500);
+        await loadFeedbackData();
+      } catch(e) {
+        alert('清空失败: ' + e.message);
+      }
+    });
+
+    // 绑定 KPI 快捷卡片点击
+    document.querySelectorAll('.kpi-card').forEach(card => {
+      card.addEventListener('click', () => {
+        document.querySelectorAll('.kpi-card').forEach(c => c.classList.remove('active-filter'));
+        card.classList.add('active-filter');
+        const kpi = card.getAttribute('data-kpi');
+
+        if (kpi === 'all') {
+          currentFilter.status = 'all';
+          currentFilter.severity = 'all';
+        } else if (kpi === 'pending') {
+          currentFilter.status = 'pending';
+          currentFilter.severity = 'all';
+        } else if (kpi === 'resolved') {
+          currentFilter.status = 'resolved';
+          currentFilter.severity = 'all';
+        } else if (kpi === 'p0p1') {
+          currentFilter.status = 'pending';
+          currentFilter.severity = 'p0p1';
+        }
+
+        // 同步工具栏按钮
+        document.querySelectorAll('[data-status]').forEach(b => {
+          b.classList.toggle('active', b.getAttribute('data-status') === currentFilter.status);
+        });
+        renderCards();
+      });
+    });
+
+    // 绑定状态过滤
+    document.querySelectorAll('[data-status]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-status]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter.status = btn.getAttribute('data-status');
+        renderCards();
+      });
+    });
+
+    // 绑定级别过滤
+    document.querySelectorAll('[data-sev]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('[data-sev]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter.severity = btn.getAttribute('data-sev');
+        renderCards();
+      });
+    });
+
+    // 绑定终端过滤
+    document.getElementById('terminal-filter').addEventListener('change', (e) => {
+      currentFilter.terminal = e.target.value;
+      renderCards();
+    });
+
+    // 绑定搜索输入
+    document.getElementById('search-input').addEventListener('input', (e) => {
+      currentFilter.search = e.target.value.trim();
+      renderCards();
+    });
+
+    // 双向全量同步
+    document.getElementById('btn-sync-all').addEventListener('click', async () => {
+      const btn = document.getElementById('btn-sync-all');
+      btn.innerText = '⏳ 正在全量双向同步...';
+      btn.disabled = true;
+      try {
+        await loadFeedbackData();
+        showToast('✓ 已与云端服务完成数据同步！');
+      } catch(e) {
+        showToast('同步完成');
+        loadFeedbackData();
+      } finally {
+        btn.innerText = '🔄 立即全量双向同步';
+        btn.disabled = false;
+      }
+    });
+
+    // 导出 Markdown
+    document.getElementById('btn-export-md').addEventListener('click', () => {
+      if (allRecords.length === 0) {
+        alert('暂无数据可导出');
+        return;
+      }
+      let md = `# 正杰全球聘 · 原型反馈与 Agent 排障清单\n\n> 导出时间: ${new Date().toLocaleString()} | 累计反馈数: ${allRecords.length} 条\n\n`;
+      allRecords.forEach((r, i) => {
+        md += `### ${i + 1}. [${r.severity || 'P2'}] ${r.title} (${r.typeLabel || '反馈'})\n`;
+        md += `- **缺陷编号**: \`${r.id}\`\n`;
+        md += `- **当前状态**: \`${r.status === 'resolved' ? '已解决 (Resolved)' : '待处理 (Pending)'}\`\n`;
+        md += `- **所在页面/模块**: \`${r.pagePath}\` (${r.pageTitle || ''})\n`;
+        md += `- **反馈人员**: ${r.contact || '匿名'}\n`;
+        md += `- **提交时间**: ${r.time || '-'}\n`;
+        md += `- **问题详细描述**:\n  > ${(r.description || '').replace(/\n/g, '\n  > ')}\n\n`;
+        if (r.status === 'resolved' && r.resolution) {
+          md += `#### 🎯 修复结案记录:\n- **解决人**: ${r.resolution.resolvedBy || 'AI Agent'}\n- **解决时间**: ${r.resolution.resolvedAt || '-'}\n- **修复说明**: ${r.resolution.notes || '-'}\n\n`;
+        }
+        md += `---\n\n`;
+      });
+      const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `正杰原型反馈清单_${Date.now()}.md`;
+      a.click();
+    });
+
+    // 导出 JSON
+    document.getElementById('btn-export-json').addEventListener('click', () => {
+      if (allRecords.length === 0) {
+        alert('暂无数据可导出');
+        return;
+      }
+      const blob = new Blob([JSON.stringify(allRecords, null, 2)], { type: 'application/json;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `正杰原型反馈数据_${Date.now()}.json`;
+      a.click();
+    });
+
+    // 自动清理本地残留的历史模拟数据（避免重复污染服务端），并加载最新服务端真实数据
+    async function initDashboard() {
+      // 如果本地存在早期的旧测试 ID，主动予以清除
+      for (const k of LOCAL_STORAGE_KEYS) {
+        try {
+          const raw = localStorage.getItem(k);
+          if (raw) {
+            let list = JSON.parse(raw);
+            if (Array.isArray(list)) {
+              // 过滤掉已知的模拟数据前缀
+              const cleaned = list.filter(item => {
+                if (!item || !item.id) return false;
+                if (item.id.startsWith('FB-178792') || item.id.startsWith('FB-178796') || item.id.includes('TEST')) return false;
+                return true;
+              });
+              if (cleaned.length !== list.length) {
+                localStorage.setItem(k, JSON.stringify(cleaned));
+              }
+            }
+          }
+        } catch (e) {}
+      }
+
+      // 拉取最新服务端数据展示
+      await loadFeedbackData();
+    }
+
+    // 启动初始加载
+    initDashboard();
+  </script>
+
+</body>
+</html>

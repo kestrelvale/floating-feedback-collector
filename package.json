@@ -1,0 +1,28 @@
+{
+  "name": "floating-feedback-collector",
+  "version": "1.0.0",
+  "description": "企业级悬浮问题反馈收集器、可视化大盘与 MCP 闭环排障工作流引擎",
+  "main": "cli/init.js",
+  "bin": {
+    "feedback-collector": "bin/feedback-collector.js",
+    "feedback-init": "bin/feedback-collector.js"
+  },
+  "scripts": {
+    "init": "node cli/init.js",
+    "start": "node templates/server/server.js",
+    "test": "node scripts/test-e2e.js"
+  },
+  "keywords": [
+    "feedback-collector",
+    "mcp",
+    "bug-report",
+    "screenshot",
+    "dashboard",
+    "tour-guide",
+    "ai-agent",
+    "codex",
+    "claude"
+  ],
+  "author": "AI Architecture Team",
+  "license": "MIT"
+}

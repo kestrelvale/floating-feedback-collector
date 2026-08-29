@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "feedback-collector": {
+      "command": "node",
+      "args": ["${PROJECT_ROOT}/mcp/feedback-mcp-server.js"],
+      "env": {
+        "REMOTE_SERVER_URL": "${REMOTE_SERVER_URL}"
+      }
+    }
+  }
+}
