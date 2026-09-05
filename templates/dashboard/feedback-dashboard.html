@@ -1228,11 +1228,11 @@
           </button>
         </div>
 
-        <!-- 🌟 2秒无感热刷新开关与呼吸灯 -->
-        <button class="btn btn-outline" id="btn-toggle-autorefresh" onclick="toggleAutoRefresh()" style="border-color:rgba(16,185,129,0.4); color:#34d399; display:inline-flex; align-items:center; gap:6px;">
+        <!-- 🌟 变动触发·智能数据同步指示器 (无盲目轮询，变动即推) -->
+        <div class="btn btn-outline" style="border-color:rgba(16,185,129,0.4); color:#34d399; display:inline-flex; align-items:center; gap:6px; cursor:default;" title="智能事件驱动：仅在用户提交反馈、MCP结案或切回标签页时精准触发刷新，零多余服务器负荷">
           <span style="width:8px; height:8px; border-radius:50%; background:#10b981; display:inline-block; box-shadow:0 0 6px #10b981;" id="live-dot"></span>
-          <span id="txt-autorefresh">热刷新: 开 (2s)</span>
-        </button>
+          <span id="txt-autorefresh">变更触发模式 (零冗余负载)</span>
+        </div>
 
         <a class="btn btn-outline" href="index.html" style="text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
           🏠 五端演示中心
@@ -2109,9 +2109,15 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
       }
     };
 
-        // 统一 API 基础地址（支持 file:// 协议与 http 协议自适应）
+        // 统一 API 基础地址 (在线上模式下统一回传云端服务器，线下模式走本地)
     function getApiBaseUrl() {
-      return window.location.protocol === 'file:' ? 'http://127.0.0.1:8888' : '';
+      if (typeof currentDashboardMode !== 'undefined' && currentDashboardMode === 'online') {
+        const isAlreadyOnCloud = window.location.hostname.includes('43.139.67.247') || window.location.port === '23333';
+        return isAlreadyOnCloud ? '' : 'http://43.139.67.247:23333';
+      } else {
+        const isLocalServer = window.location.port === '8888';
+        return isLocalServer ? '' : 'http://127.0.0.1:8888';
+      }
     }
 
     // 保存工程师指导意见
@@ -2275,16 +2281,33 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
         const localApiUrl = isFile ? `http://127.0.0.1:8888/api/feedback/list?includeTrash=true&t=${Date.now()}` : `/api/feedback/list?includeTrash=true&t=${Date.now()}`;
         const onlineApiUrl = `http://43.139.67.247:23333/api/feedback/list?includeTrash=true&t=${Date.now()}`;
 
-        let targetUrl = currentDashboardMode === 'online' ? onlineApiUrl : localApiUrl;
+        const isOnline = (currentDashboardMode === 'online');
+        const isAlreadyOnCloud = window.location.hostname.includes('43.139.67.247') || window.location.port === '23333';
+        const isLocalHost = window.location.port === '8888';
+
+        const cloudUrl = isAlreadyOnCloud 
+          ? `/api/feedback/list?includeTrash=true&t=${Date.now()}` 
+          : `http://43.139.67.247:23333/api/feedback/list?includeTrash=true&t=${Date.now()}`;
+
+        const localUrl = isLocalHost 
+          ? `/api/feedback/list?includeTrash=true&t=${Date.now()}` 
+          : `http://127.0.0.1:8888/api/feedback/list?includeTrash=true&t=${Date.now()}`;
+
+        let targetUrl = isOnline ? cloudUrl : localUrl;
 
         let resData = null;
         try {
           const res = await fetch(targetUrl, { mode: 'cors' });
-          if (res.ok) resData = await res.json();
+          if (res.ok) {
+            resData = await res.json();
+          } else {
+            throw new Error(`HTTP ${res.status}`);
+          }
         } catch(err) {
-          if (currentDashboardMode === 'online') {
+          // 容灾降级：若线上网络不可达且在中台本地，回退读取本地
+          if (isOnline) {
             try {
-              const resLocal = await fetch(localApiUrl, { mode: 'cors' });
+              const resLocal = await fetch(localUrl, { mode: 'cors' });
               if (resLocal.ok) resData = await resLocal.json();
             } catch(e) {}
           }
@@ -2600,7 +2623,7 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
         } catch (e) {}
         const safeTitle = escapeHtml(r.title || '未命名反馈');
         const safeDesc = escapeHtml(r.description || '无详细描述').replace(/\n/g, '<br>');
-        const savedEngineerContent = (r.engineerNote && r.engineerNote.content) ? r.engineerNote.content : '';
+        const savedEngineerContent = (typeof r.engineerNote === 'string') ? r.engineerNote : ((r.engineerNote && r.engineerNote.content) ? r.engineerNote.content : '');
         const engineerDraft = getEngineerDraft(r.id);
         const engineerContent = engineerDraft === null ? savedEngineerContent : engineerDraft;
         const engineerTime = (r.engineerNote && r.engineerNote.updatedAt) ? r.engineerNote.updatedAt : '';
@@ -3379,12 +3402,60 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
       if (modal) modal.style.display = 'none';
     }
 
-    // 2 秒轻量心跳无感热刷新
-    setInterval(() => {
-      if (autoRefreshActive && typeof loadFeedbackData === 'function') {
-        loadFeedbackData(false);
+    // =========================================================================
+    // 🌟 四大智能按需触发机制 (彻底废除盲目轮询，仅在有数据变动时精准刷新)
+    // =========================================================================
+
+    // 触发机制 1: SSE 服务端数据变更长连接单向通知 (极低开销，变更毫秒级推送)
+    let sseEventSource = null;
+    function initEventDrivenSync() {
+      if (typeof EventSource === 'undefined') return;
+      try {
+        if (sseEventSource) sseEventSource.close();
+        const apiBase = getApiBaseUrl();
+        const sseUrl = apiBase ? `${apiBase}/api/feedback/events` : '/api/feedback/events';
+        
+        sseEventSource = new EventSource(sseUrl);
+        sseEventSource.onmessage = function(event) {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type && data.type !== 'CONNECTED') {
+              console.log('⚡ [事件驱动] 捕获到服务器数据变更通知:', data.type);
+              loadFeedbackData(true);
+            }
+          } catch(e) {}
+        };
+        sseEventSource.onerror = function() {
+          // 断开时静默重试或降级
+        };
+      } catch(e) {}
+    }
+
+    // 触发机制 2: 跨页面 BroadcastChannel 广播联动 (同浏览器任一端提单即刻通知中台)
+    try {
+      const fbChannel = new BroadcastChannel('zj_feedback_channel');
+      fbChannel.onmessage = function(event) {
+        if (event && event.data && event.data.type === 'FEEDBACK_MUTATED') {
+          console.log('⚡ [跨标签联动] 监听到前端用户提交新反馈，触发数据更新');
+          loadFeedbackData(true);
+        }
+      };
+    } catch(e) {}
+
+    // 触发机制 3: 窗口聚焦 / 切回标签页感知 (用户从 IDE 或终端切换回中台时，触发 1 次轻量检查)
+    document.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'visible') {
+        console.log('👀 [切回窗口] 检测到用户回到反馈中台，执行一次静默数据对齐');
+        loadFeedbackData(true);
       }
-    }, 2000);
+    });
+
+    window.addEventListener('focus', function() {
+      loadFeedbackData(false);
+    });
+
+    // 页面初始化时执行首屏加载并启动事件驱动监听
+    initEventDrivenSync();
   </script>
 
 </body>
