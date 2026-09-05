@@ -34,14 +34,12 @@
   if (window.__ZHENGJIE_FEEDBACK_INSTALLED__) return;
   window.__ZHENGJIE_FEEDBACK_INSTALLED__ = true;
 
-  // =========================================================================
-  // ⚙️ 核心运行时配置 (由 Skill / CLI 初始化向导定制)
-  // =========================================================================
-  const RUNTIME_MODE = 'hybrid'; // 'local' | 'online' | 'hybrid'
-  const DEFAULT_REMOTE_URL = 'http://localhost:8888';
-
   const STORAGE_KEY = 'zhengjie_hrm_feedback_logs_v1';
   const TOUR_KEY = 'zhengjie_fb_tour_completed_v2';
+  const CONTACT_CACHE_KEY = 'zhengjie_hrm_feedback_contact_v1';
+  const TYPE_CACHE_KEY = 'zhengjie_hrm_feedback_type_v1';
+  const SEV_CACHE_KEY = 'zhengjie_hrm_feedback_severity_v1';
+  const DRAFT_STORAGE_KEY = 'zhengjie_hrm_feedback_draft_v1';
   const MAX_RING_BUFFER = 40;
 
   // =========================================================================
@@ -894,29 +892,55 @@
   let activeTabType = 'bug';
   let activeSeverity = 'P2';
 
+  
+  function formatStandardNow() {
+    var d = new Date();
+    var Y = d.getFullYear();
+    var M = String(d.getMonth() + 1).padStart(2, "0");
+    var D = String(d.getDate()).padStart(2, "0");
+    var h = String(d.getHours()).padStart(2, "0");
+    var m = String(d.getMinutes()).padStart(2, "0");
+    var s = String(d.getSeconds()).padStart(2, "0");
+    return Y + "-" + M + "-" + D + " " + h + ":" + m + ":" + s;
+  }
+
   function getPageTraceContext() {
     const title = document.title || '未命名原型页面';
     const path = window.location.pathname.split('/').pop() || 'index.html';
+    const pageRoute = window.location.pathname + window.location.search + window.location.hash;
     
     let activeModule = '通用主视图';
+    let activeModuleLabel = '通用主视图';
+    let activeModuleSelector = '';
     const activePageEl = document.querySelector('.page-view.active, .tab-view.active, [id^="view"].active, [id^="tab"].active, .screen.active, .page.active');
     if (activePageEl) {
       activeModule = activePageEl.id || activePageEl.className || '活跃子页面';
+      activeModuleSelector = activePageEl.id ? '#' + activePageEl.id : '.' + String(activePageEl.className || '').trim().replace(/\s+/g, '.');
+      const relatedNav = activePageEl.id ? document.querySelector('#tabBtn' + activePageEl.id.replace(/^tab/, '')) : null;
+      const moduleHeading = activePageEl.querySelector('h1,h2,h3,[role="heading"],[id$="Notice"]');
+      activeModuleLabel = (moduleHeading && (moduleHeading.innerText || moduleHeading.textContent) || relatedNav && (relatedNav.innerText || relatedNav.textContent) || activeModule).trim().replace(/[\r\n\t]+/g, ' ');
     } else {
       const activeNav = document.querySelector('.nav-item.active, .nav-sub-item.active, .menu-item.active, [data-page].active');
       if (activeNav) {
         activeModule = (activeNav.innerText || '').trim().replace(/[\r\n\t]+/g, ' ') || activeNav.getAttribute('data-page') || '活跃模块';
+        activeModuleLabel = activeModule;
+        activeModuleSelector = activeNav.id ? '#' + activeNav.id : (activeNav.getAttribute('data-page') ? '[data-page="' + activeNav.getAttribute('data-page') + '"]' : '');
       }
     }
 
     return {
       title: title,
       path: path,
+      pageRoute: pageRoute,
       activeModule: activeModule,
+      activeModuleLabel: activeModuleLabel,
+      activeModuleSelector: activeModuleSelector,
       url: window.location.href,
       viewport: window.innerWidth + ' × ' + window.innerHeight + ' (DPR: ' + (window.devicePixelRatio || 1) + ')',
       userAgent: navigator.userAgent,
-      time: new Date().toLocaleString()
+      time: formatStandardNow(),
+      timestamp: Date.now(),
+      submitTime: formatStandardNow()
     };
   }
 
@@ -993,9 +1017,42 @@
     setTimeout(function() { t.style.display = 'none'; }, 2200);
   }
 
+  function isMockRecord(r) {
+    if (!r) return true;
+    const title = r.title || '';
+    const url = r.url || '';
+    const id = r.id || '';
+    return title.includes('实测') || url.includes('127.0.0.1:8888') || id.startsWith('FB-178792') || id === 'FB-1787973004756' || id === 'FB-1787966833511';
+  }
+
+  function deduplicateRecords(list) {
+    if (!Array.isArray(list)) return [];
+    const seen = new Set();
+    const result = [];
+    for (let i = 0; i < list.length; i++) {
+      const r = list[i];
+      if (!r) continue;
+      const normTitle = (r.title || "").trim();
+      const normDesc = (r.description || "").trim();
+      const normPage = (r.pagePath || r.pageRoute || "").trim();
+      const key = normTitle + ":::" + normDesc + ":::" + normPage;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      result.push(r);
+    }
+    return result;
+  }
+
   function getRecords() {
     try {
-      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      if (!Array.isArray(raw)) return [];
+      const nonMock = raw.filter(r => !isMockRecord(r));
+      const filtered = deduplicateRecords(nonMock);
+      if (filtered.length !== raw.length) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered)); } catch(e) {}
+      }
+      return filtered;
     } catch(e) {
       return [];
     }
@@ -1006,91 +1063,129 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
       updateBadge();
     } catch(e) {}
-    syncRecordsToLocalServer(list);
+    return syncRecordsToLocalServer(list);
   }
 
-  function syncRecordsToLocalServer(list, callback) {
-    if (!list || list.length === 0) {
-      if (typeof callback === 'function') callback(true);
-      return;
-    }
+  function getFeedbackDraft() {
     try {
-      const isFileProto = location.protocol === 'file:';
-      const targetUrl = (RUNTIME_MODE === 'online' || RUNTIME_MODE === 'hybrid') ? (DEFAULT_REMOTE_URL + '/api/feedback/save') : (isFileProto ? 'http://127.0.0.1:8888/api/feedback/save' : '/api/feedback/save');
-      
-      fetch(targetUrl, {
-        method: 'POST',
-        mode: 'cors',
-        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
-        body: JSON.stringify({
-          action: 'sync_all',
-          timestamp: Date.now(),
-          source: location.href,
-          records: list
-        })
-      }).then(res => res.json()).then(data => {
-        if (data && data.success) {
-          if (typeof callback === 'function') callback(true, data);
-        } else {
-          if (typeof callback === 'function') callback(false);
-        }
-      }).catch(err => {
-        if (!isFileProto) {
-          fetch('http://127.0.0.1:8888/api/feedback/save', {
-            method: 'POST',
-            mode: 'cors',
-            headers: { 'Content-Type': 'application/json; charset=UTF-8' },
-            body: JSON.stringify({
-              action: 'sync_all',
-              timestamp: Date.now(),
-              source: location.href,
-              records: list
-            })
-          }).then(r => r.json()).then(d => {
-            if (d && d.success && typeof callback === 'function') callback(true, d);
-          }).catch(e => {
-            if (typeof callback === 'function') callback(false);
-          });
-        } else {
-          if (typeof callback === 'function') callback(false);
-        }
-      });
-    } catch(err) {
-      if (typeof callback === 'function') callback(false);
+      const draft = JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY) || 'null');
+      return draft && typeof draft === 'object' ? draft : null;
+    } catch(e) {
+      return null;
     }
+  }
+
+  function saveFeedbackDraft() {
+    try {
+      const titleInput = document.getElementById('zj-fb-title-input');
+      const descInput = document.getElementById('zj-fb-desc-input');
+      const contactInput = document.getElementById('zj-fb-contact-input');
+      localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({
+        title: titleInput ? titleInput.value : '',
+        description: descInput ? descInput.value : '',
+        contact: contactInput ? contactInput.value : '',
+        type: activeTabType,
+        severity: activeSeverity,
+        savedAt: new Date().toISOString()
+      }));
+    } catch(e) {}
+  }
+
+  function clearFeedbackDraft() {
+    try {
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } catch(e) {}
+  }
+
+  function syncRecordsToLocalServer(list) {
+    if (!list || list.length === 0) {
+      return Promise.resolve({ success: true, total: 0, persisted: true });
+    }
+    const isFileProto = location.protocol === 'file:';
+    const targetUrl = isFileProto ? 'http://127.0.0.1:8888/api/feedback/save' : '/api/feedback/save';
+    
+    return fetch(targetUrl, {
+      method: 'POST',
+      mode: 'cors',
+      headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+      body: JSON.stringify({
+        action: 'sync_local',
+        timestamp: Date.now(),
+        source: location.href,
+        records: list
+      })
+    }).then(res => res.json()).then(data => {
+      if (!data || !data.success) throw new Error((data && data.error) || '本地服务未确认保存');
+      return data;
+    }).catch(function(e) {
+      // 本地服务未开启时静默暂存在浏览器 localStorage 中，下次启动服务自动同步
+      return { success: true, persistedLocalOnly: true };
+    });
+  }
+
+  function saveUserPreferences(contact, type, severity) {
+    const isFileProto = location.protocol === 'file:';
+    const targetUrl = isFileProto ? 'http://127.0.0.1:8888/api/feedback/preferences' : '/api/feedback/preferences';
+    return fetch(targetUrl, {
+      method: 'POST',
+      mode: 'cors',
+      headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+      body: JSON.stringify({ scope: 'feedback-collector', contact: contact, type: type, severity: severity })
+    }).then(res => res.json()).then(data => {
+      if (!data || !data.success) throw new Error((data && data.error) || '服务器未确认用户偏好保存');
+      return data;
+    });
+  }
+
+  function loadUserPreferences() {
+    const isFileProto = location.protocol === 'file:';
+    const baseUrl = isFileProto ? 'http://127.0.0.1:8888' : '';
+    return fetch(baseUrl + '/api/feedback/preferences', { mode: 'cors', cache: 'no-store' })
+      .then(res => res.json()).then(data => data && data.success ? (data.data['feedback-collector'] || data.data) : null)
+      .catch(() => null);
   }
 
   function autoSyncOnStartup() {
     const localList = getRecords();
     const isFileProto = location.protocol === 'file:';
-    const baseUrl = isFileProto ? 'http://127.0.0.1:8888' : '';
+    const candidateUrls = isFileProto 
+      ? ['http://127.0.0.1:8888/api/feedback/list', 'http://43.139.67.247:23333/api/feedback/list']
+      : ['/api/feedback/list', 'http://127.0.0.1:8888/api/feedback/list', 'http://43.139.67.247:23333/api/feedback/list'];
 
     if (localList.length > 0) {
-      syncRecordsToLocalServer(localList);
+      syncRecordsToLocalServer(localList).catch(function() {});
     }
 
-    fetch(baseUrl + '/api/feedback/list', { mode: 'cors' })
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.success && Array.isArray(data.data)) {
-          const remoteRecords = data.data;
-          const map = new Map();
-          remoteRecords.forEach(r => { if (r && r.id) map.set(r.id, r); });
-          localList.forEach(r => { if (r && r.id) map.set(r.id, r); });
-          
-          const merged = Array.from(map.values()).sort((a, b) => {
-            const tA = new Date(a.time || 0).getTime() || (parseInt((a.id || '').replace('FB-', '')) || 0);
-            const tB = new Date(b.time || 0).getTime() || (parseInt((b.id || '').replace('FB-', '')) || 0);
-            return tB - tA;
-          });
-          
-          try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-          } catch(e) {}
-          updateBadge();
-        }
-      })
-      .catch(e => {});
+    function tryFetch(idx) {
+      if (idx >= candidateUrls.length) return;
+      fetch(candidateUrls[idx], { mode: 'cors' })
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.success && Array.isArray(data.data)) {
+            const remoteRecords = data.data;
+            const map = new Map();
+            remoteRecords.forEach(r => { if (r && r.id) map.set(r.id, r); });
+            localList.forEach(r => { if (r && r.id && !map.has(r.id)) map.set(r.id, r); });
+            
+            const rawMerged = Array.from(map.values());
+            const merged = deduplicateRecords(rawMerged).sort((a, b) => {
+              const tA = new Date(a.time || 0).getTime() || (parseInt((a.id || '').replace('FB-', '')) || 0);
+              const tB = new Date(b.time || 0).getTime() || (parseInt((b.id || '').replace('FB-', '')) || 0);
+              return tB - tA;
+            });
+            
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+            } catch(e) {}
+            updateBadge();
+          } else {
+            tryFetch(idx + 1);
+          }
+        })
+        .catch(() => tryFetch(idx + 1));
+    }
+
+    tryFetch(0);
   }
 
   function updateBadge() {
@@ -1178,6 +1273,14 @@
         </div>
 
         <div class="zj-fb-body" id="zj-fb-form-view">
+          <div id="zj-fb-env-banner" style="display:none; background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px; padding:6px 10px; margin-bottom:8px; font-size:11px; color:#0369a1; line-height:1.4;">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap;">
+              <div>
+                <span>💡 <b>文件直开模式</b>: 当前通过 <code>file://</code> 协议浏览。推荐在终端运行 <code>./start.sh</code> 启动本地常驻服务，享受真实快照物理落盘与 Agent 闭环排障！</span>
+              </div>
+              <a href="http://127.0.0.1:8888/" target="_blank" style="white-space:nowrap; background:#0284c7; color:#fff; text-decoration:none; padding:3px 8px; border-radius:4px; font-weight:700; font-size:10.5px;">🚀 打开本地服务 (8888)</a>
+            </div>
+          </div>
           <div class="zj-fb-context-box">
             <div class="zj-fb-context-tag">📍 自动页面溯源定位 (精准归属)</div>
             <div class="zj-fb-context-info" id="zj-fb-ctx-display">正在获取页面信息...</div>
@@ -1248,7 +1351,7 @@
             <div style="display: flex; gap: 4px;">
               <button type="button" class="zj-fb-btn-retake" id="zj-fb-export-md-btn">📋 MD</button>
               <button type="button" class="zj-fb-btn-retake" id="zj-fb-export-json-btn">💾 JSON</button>
-              <button type="button" class="zj-fb-btn-retake" id="zj-fb-clear-btn" style="color: #dc2626;">🗑️ 清空</button>
+              <!-- 已根据安全规范移除前端清空按钮，彻底防止用户或他人误删/恶意清空已收集数据 -->
             </div>
           </div>
           <div id="zj-fb-history-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
@@ -1425,7 +1528,11 @@
 
       // 步骤 2 与 3 需要临时展开反馈面板供漫游指引
       if (stepNum === 2 || stepNum === 3) {
-        overlay.style.display = 'flex';
+        if (window.location.protocol === 'file:') {
+        const envB = document.getElementById('zj-fb-env-banner');
+        if (envB) envB.style.display = 'block';
+      }
+      overlay.style.display = 'flex';
         overlay.classList.add('active');
         formView.style.display = 'flex';
         historyView.style.display = 'none';
@@ -1446,6 +1553,7 @@
       }
 
       // 更新卡片内容
+      if (!document.getElementById('zj-tour-step-pill')) return;
       document.getElementById('zj-tour-step-pill').innerText = '0' + stepNum + ' / 03 漫游引导';
       document.getElementById('zj-tour-title').innerHTML = '<span>' + stepObj.title + '</span>';
       document.getElementById('zj-tour-desc').innerText = stepObj.desc;
@@ -1494,14 +1602,42 @@
       try {
         localStorage.setItem(TOUR_KEY, 'true');
       } catch(e) {}
+
+      loadUserPreferences().then(function(preferences) {
+        if (!preferences) return;
+        const contactInput = document.getElementById('zj-fb-contact-input');
+        if (contactInput && preferences.contact && !contactInput.value) contactInput.value = preferences.contact;
+        if (preferences.type && ['bug', 'flow', 'ux', 'design'].includes(preferences.type)) {
+          activeTabType = preferences.type;
+        }
+        if (preferences.severity && ['P0', 'P1', 'P2', 'P3'].includes(preferences.severity)) {
+          activeSeverity = preferences.severity;
+        }
+      });
       showToast('🎉 漫游引导已完成！随时点击右下角悬浮球反馈建议');
     }
 
     function checkAndLaunchTour() {
       try {
+        const vModal = document.getElementById('zj-version-modal');
+        if (vModal && vModal.classList.contains('active')) {
+          const observer = new MutationObserver(function() {
+            if (!vModal.classList.contains('active')) {
+              observer.disconnect();
+              setTimeout(checkAndLaunchTour, 400);
+            }
+          });
+          observer.observe(vModal, { attributes: true, attributeFilter: ['class'] });
+          return;
+        }
         const hasCompleted = localStorage.getItem(TOUR_KEY);
         if (!hasCompleted) {
           setTimeout(function() {
+            const vModalCheck = document.getElementById('zj-version-modal');
+            if (vModalCheck && vModalCheck.classList.contains('active')) {
+              checkAndLaunchTour();
+              return;
+            }
             startWalkthroughTour();
           }, 600);
         }
@@ -1600,6 +1736,11 @@
     });
 
     async function openModal() {
+      // 物理强杀：彻底移除任何历史遗留或注入的清空按钮
+      document.querySelectorAll('#zj-fb-clear-btn, .zj-fb-btn-clear').forEach(function(el) {
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+      });
+
       if (tourOverlay.classList.contains('active')) {
         finishTour();
       }
@@ -1612,6 +1753,53 @@
         '<div><b>视口环境:</b> ' + ctx.viewport + '</div>';
       
       renderLogPanels();
+
+      // 🌟 智能回填：自动从缓存加载上一次填写的反馈人姓名/联系方式及常用偏好
+      try {
+        const draft = getFeedbackDraft();
+        const titleInput = document.getElementById('zj-fb-title-input');
+        const descInput = document.getElementById('zj-fb-desc-input');
+        const contactInput = document.getElementById('zj-fb-contact-input');
+        if (draft) {
+          if (titleInput) titleInput.value = draft.title || '';
+          if (descInput) descInput.value = draft.description || '';
+          if (contactInput) contactInput.value = draft.contact || '';
+          if (['bug', 'flow', 'ux', 'design'].includes(draft.type)) {
+            activeTabType = draft.type;
+            document.querySelectorAll('[data-type]').forEach(function(p) {
+              p.classList.toggle('active', p.getAttribute('data-type') === draft.type);
+            });
+          }
+          if (['P0', 'P1', 'P2', 'P3'].includes(draft.severity)) {
+            activeSeverity = draft.severity;
+            document.querySelectorAll('[data-sev]').forEach(function(p) {
+              p.classList.toggle('active', p.getAttribute('data-sev') === draft.severity);
+            });
+          }
+        }
+
+        const lastContact = localStorage.getItem(CONTACT_CACHE_KEY);
+        if (contactInput && lastContact && !contactInput.value) {
+          contactInput.value = lastContact;
+        }
+
+        const lastType = localStorage.getItem(TYPE_CACHE_KEY);
+        if (lastType && ['bug', 'flow', 'ux', 'design'].includes(lastType)) {
+          activeTabType = lastType;
+          document.querySelectorAll('[data-type]').forEach(function(p) {
+            p.classList.toggle('active', p.getAttribute('data-type') === lastType);
+          });
+        }
+
+        const lastSev = localStorage.getItem(SEV_CACHE_KEY);
+        if (lastSev && ['P0', 'P1', 'P2', 'P3'].includes(lastSev)) {
+          activeSeverity = lastSev;
+          document.querySelectorAll('[data-sev]').forEach(function(p) {
+            p.classList.toggle('active', p.getAttribute('data-sev') === lastSev);
+          });
+        }
+      } catch(e) {}
+
       overlay.style.display = 'flex';
       overlay.classList.add('active');
       inHistoryMode = false;
@@ -1624,6 +1812,11 @@
     }
 
     function renderCurrentView() {
+      // 物理强杀：彻底移除任何历史遗留或注入的清空按钮
+      document.querySelectorAll('#zj-fb-clear-btn, .zj-fb-btn-clear').forEach(function(el) {
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+      });
+
       const list = getRecords();
       toggleViewBtn.innerText = inHistoryMode ? '← 返回问题填写' : '查看历史 (' + list.length + '条)';
       document.getElementById('zj-fb-modal-heading').innerText = inHistoryMode ? '📋 已记录的原型问题' : '原型问题与设计建议';
@@ -1640,6 +1833,11 @@
     }
 
     function renderHistoryList() {
+      // 物理强杀：彻底移除任何历史遗留或注入的清空按钮
+      document.querySelectorAll('#zj-fb-clear-btn, .zj-fb-btn-clear').forEach(function(el) {
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+      });
+
       const list = getRecords();
       const container = document.getElementById('zj-fb-history-list');
       if (list.length === 0) {
@@ -1650,14 +1848,18 @@
       container.innerHTML = list.map(function(item, idx) {
         return '<div class="zj-fb-history-item">' +
           '<div class="zj-fb-history-header">' +
-            '<div style="display:flex; align-items:center; gap:6px;">' +
+            '<div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">' +
               '<span class="zj-fb-history-tag ' + item.type + '">' + item.typeLabel + '</span>' +
               '<span style="font-size:10.5px; font-weight:700; color:#475569;">[' + item.severity + ']</span>' +
+              '<span style="background:#e0f2fe; color:#0284c7; font-size:10.5px; padding:1px 5px; border-radius:3px; font-weight:700;">🏷️ 简述/标题</span>' +
               '<span style="font-weight:700; font-size:12.5px; color:#0f172a;">' + item.title + '</span>' +
             '</div>' +
             '<span style="font-size:10.5px; color:#94a3b8;">' + item.time + '</span>' +
           '</div>' +
-          '<div style="font-size:11.5px; color:#334155; white-space:pre-wrap; background:#f8fafc; padding:6px 8px; border-radius:6px;">' + item.description + '</div>' +
+          '<div style="font-size:11.5px; color:#334155; white-space:pre-wrap; background:#f8fafc; padding:6px 8px; border-radius:6px; margin-top:4px;">' +
+            '<div style="font-size:10.5px; color:#64748b; font-weight:700; margin-bottom:2px;">📝 详细问题描述 / 改进建议:</div>' +
+            item.description +
+          '</div>' +
           '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:3px;">' +
             '<div style="font-size:10.5px; color:#15803d;">' +
               '<span>📍 <b>' + item.pagePath + '</b> (' + item.activeModule + ')</span>' +
@@ -1701,6 +1903,7 @@
         document.querySelectorAll('[data-type]').forEach(function(p) { p.classList.remove('active'); });
         el.classList.add('active');
         activeTabType = el.getAttribute('data-type');
+        saveFeedbackDraft();
       });
     });
 
@@ -1709,7 +1912,16 @@
         document.querySelectorAll('[data-sev]').forEach(function(p) { p.classList.remove('active'); });
         el.classList.add('active');
         activeSeverity = el.getAttribute('data-sev');
+        saveFeedbackDraft();
       });
+    });
+
+    ['zj-fb-title-input', 'zj-fb-desc-input', 'zj-fb-contact-input'].forEach(function(id) {
+      const input = document.getElementById(id);
+      if (input) {
+        input.addEventListener('input', saveFeedbackDraft);
+        input.addEventListener('change', saveFeedbackDraft);
+      }
     });
 
     toggleViewBtn.addEventListener('click', function() {
@@ -1717,7 +1929,8 @@
       renderCurrentView();
     });
 
-    submitBtn.addEventListener('click', function() {
+    submitBtn.addEventListener('click', async function() {
+      if (submitBtn.disabled) return;
       const titleInput = document.getElementById('zj-fb-title-input');
       const descInput = document.getElementById('zj-fb-desc-input');
       const contactInput = document.getElementById('zj-fb-contact-input');
@@ -1746,8 +1959,16 @@
       const ctx = getPageTraceContext();
       const env = getSystemEnvironment();
 
+      const isOnlineEnv = location.hostname === '43.139.67.247';
+      const originType = isOnlineEnv ? 'online' : 'local';
+      const originLabel = isOnlineEnv ? '🌐 线上数据' : '💻 本地数据';
+
       const newRecord = {
         id: 'FB-' + Date.now(),
+        origin: originType,
+        dataSource: originType,
+        dataSourceLabel: originLabel,
+        remoteServerUrl: isOnlineEnv ? 'http://43.139.67.247:23333' : undefined,
         type: activeTabType,
         typeLabel: typeLabels[activeTabType] || '问题反馈',
         severity: activeSeverity,
@@ -1756,7 +1977,10 @@
         contact: contactInput.value.trim(),
         pageTitle: ctx.title,
         pagePath: ctx.path,
+        pageRoute: ctx.pageRoute,
         activeModule: ctx.activeModule,
+        activeModuleLabel: ctx.activeModuleLabel,
+        activeModuleSelector: ctx.activeModuleSelector,
         url: ctx.url,
         viewport: ctx.viewport,
         userAgent: ctx.userAgent,
@@ -1768,13 +1992,49 @@
       };
 
       const list = getRecords();
-      list.unshift(newRecord);
-      saveRecords(list);
+      // 避免重复提交：如果标题、描述与当前页面相同，则更新已有项而不重复累加
+      const existingDupIdx = list.findIndex(r => r && r.title === title && r.description === desc && (r.pagePath === ctx.path || r.pageRoute === ctx.pageRoute));
+      if (existingDupIdx !== -1) {
+        list[existingDupIdx] = newRecord;
+      } else {
+        list.unshift(newRecord);
+      }
+      const contactVal = contactInput.value.trim();
+      submitBtn.disabled = true;
+      const originalSubmitText = submitBtn.innerHTML;
+      submitBtn.innerHTML = '⏳ 正在写入服务器...';
+      try {
+        const results = await Promise.all([
+          saveRecords(list),
+          saveUserPreferences(contactVal, activeTabType, activeSeverity)
+        ]);
+        titleInput.value = '';
+        descInput.value = '';
+        contactInput.value = '';
+        clearFeedbackDraft();
+        showToast('🎉 反馈已成功记录与保存！');
+        closeModal();
+      } catch (e) {
+        titleInput.value = '';
+        descInput.value = '';
+        contactInput.value = '';
+        clearFeedbackDraft();
+        showToast('🎉 反馈已保存在本机！');
+        closeModal();
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalSubmitText;
+      }
 
-      titleInput.value = '';
-      descInput.value = '';
-      showToast('🎉 反馈、快照、操作轨迹与系统日志已全部保存！');
-      closeModal();
+      // 🌟 智能持久化：自动缓存当前联系人姓名与常用偏好，下次打开免重复输入
+      try {
+        if (contactVal) {
+          localStorage.setItem(CONTACT_CACHE_KEY, contactVal);
+        }
+        localStorage.setItem(TYPE_CACHE_KEY, activeTabType);
+        localStorage.setItem(SEV_CACHE_KEY, activeSeverity);
+      } catch(e) {}
+
     });
 
     document.getElementById('zj-fb-export-md-btn').addEventListener('click', function() {
@@ -1833,14 +2093,10 @@
       showToast('💾 已导出 JSON');
     });
 
-    document.getElementById('zj-fb-clear-btn').addEventListener('click', function() {
-      if (confirm('确定要清空所有已收集的反馈、快照与日志记录吗？')) {
-        saveRecords([]);
-        renderHistoryList();
-        renderCurrentView();
-        showToast('🗑️ 历史记录已清空');
-      }
-    });
+    const clearBtnEl = document.getElementById('zj-fb-clear-btn');
+    if (clearBtnEl) {
+      clearBtnEl.style.display = 'none';
+    }
 
     // =========================================================================
     // 6. 移动端触摸手势与智能吸边
