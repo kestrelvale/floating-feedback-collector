@@ -3,1098 +3,3389 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>正杰全球聘 · 反馈与 Agent 闭环排障中枢 V3.1</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <title>正杰全球聘 · 原型反馈与 Agent 闭环排障中枢</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐞</text></svg>">
   <style>
     :root {
-      --bg-gradient: linear-gradient(135deg, #090d16 0%, #0d1527 50%, #08101e 100%);
-      --card-bg: rgba(15, 23, 42, 0.75);
-      --card-border: rgba(56, 189, 248, 0.16);
-      --card-border-hover: rgba(56, 189, 248, 0.45);
-      --primary: #38bdf8;
-      --primary-glow: rgba(56, 189, 248, 0.35);
-      --accent: #818cf8;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
+      --bg-base: #090e1a;
+      --bg-surface: #111a2e;
+      --bg-card: #162238;
+      --bg-card-hover: #1c2b47;
+      --border-subtle: #233554;
+      --border-active: #38bdf8;
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
-      --text-sub: #64748b;
+      --text-dim: #64748b;
+      --primary: #38bdf8;
+      --primary-glow: rgba(56, 189, 248, 0.25);
+      --accent-p0: #ef4444;
+      --accent-p1: #f97316;
+      --accent-p2: #f59e0b;
+      --accent-p3: #3b82f6;
+      --accent-success: #10b981;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --radius-xl: 22px;
+      --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-      background: var(--bg-gradient);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Noto Sans SC", sans-serif;
+      background-color: var(--bg-base);
       color: var(--text-main);
+      line-height: 1.5;
+      padding: 20px;
       min-height: 100vh;
-      padding: 24px 32px 60px;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    @media (max-width: 768px) {
+      body {
+        padding: 12px 8px;
+      }
     }
 
-    /* 顶部导航与状态条 */
-    .header-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 20px;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    /* 顶部导航与总控看板 */
+    header {
+      background: linear-gradient(135deg, #111a2e 0%, #0d2137 100%);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 20px 28px;
       margin-bottom: 24px;
-      flex-wrap: wrap;
-      gap: 16px;
-    }
-
-    .title-group {
+      box-shadow: var(--shadow-card);
       display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .logo-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #0284c7 0%, #6366f1 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
-    }
-
-    .header-titles h1 {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .version-tag {
-      font-size: 11px;
-      background: rgba(56, 189, 248, 0.15);
-      color: var(--primary);
-      border: 1px solid rgba(56, 189, 248, 0.35);
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-weight: 600;
-    }
-
-    .header-titles p {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-top: 3px;
-    }
-
-    /* 双模式切换胶囊与控制区 */
-    .controls-group {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .mode-switcher {
-      display: flex;
-      background: rgba(15, 23, 42, 0.85);
-      border: 1px solid rgba(56, 189, 248, 0.25);
-      border-radius: 10px;
-      padding: 3px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
-
-    .mode-btn {
-      padding: 6px 14px;
-      border-radius: 8px;
-      border: none;
-      background: transparent;
-      color: var(--text-muted);
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s ease;
-    }
-
-    .mode-btn.active.online {
-      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
-      color: #fff;
-      box-shadow: 0 0 12px rgba(2, 132, 199, 0.5);
-    }
-
-    .mode-btn.active.local {
-      background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
-      color: #fff;
-      box-shadow: 0 0 12px rgba(124, 58, 237, 0.5);
-    }
-
-    .live-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--success);
-      display: inline-block;
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-      70% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-      100% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-    }
-
-    .btn-action {
-      background: rgba(30, 41, 59, 0.8);
-      border: 1px solid rgba(148, 163, 184, 0.2);
-      color: var(--text-main);
-      padding: 7px 14px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.2s;
-    }
-
-    .btn-action:hover {
-      background: rgba(51, 65, 85, 0.9);
-      border-color: var(--primary);
-    }
-
-    /* KPI 卡片网格 */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .kpi-card {
-      background: var(--card-bg);
-      backdrop-filter: blur(16px);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 16px 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      transition: transform 0.2s, border-color 0.2s;
-    }
-
-    .kpi-card:hover {
-      transform: translateY(-2px);
-      border-color: var(--card-border-hover);
-    }
-
-    .kpi-num {
-      font-size: 26px;
-      font-weight: 700;
-      line-height: 1.1;
-    }
-
-    .kpi-label {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    .kpi-icon {
-      font-size: 24px;
-      opacity: 0.85;
-    }
-
-    /* 三栏导航 Tab */
-    .main-tabs {
-      display: flex;
-      gap: 12px;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.15);
-      margin-bottom: 20px;
-    }
-
-    .tab-item {
-      padding: 10px 18px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-muted);
-      border-bottom: 2px solid transparent;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      transition: all 0.2s;
-    }
-
-    .tab-item:hover {
-      color: var(--text-main);
-    }
-
-    .tab-item.active {
-      color: var(--primary);
-      border-bottom-color: var(--primary);
-    }
-
-    .tab-badge {
-      background: rgba(148, 163, 184, 0.2);
-      padding: 2px 7px;
-      border-radius: 10px;
-      font-size: 11px;
-    }
-
-    .tab-item.active .tab-badge {
-      background: rgba(56, 189, 248, 0.25);
-      color: var(--primary);
-    }
-
-    /* 过滤与搜索工具栏 */
-    .filter-bar {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-
-    .search-box {
-      flex: 1;
-      min-width: 260px;
-      position: relative;
-    }
-
-    .search-box input {
-      width: 100%;
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(148, 163, 184, 0.2);
-      border-radius: 8px;
-      padding: 8px 14px 8px 34px;
-      color: var(--text-main);
-      font-size: 13px;
-      outline: none;
-    }
-
-    .search-box input:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
-    }
-
-    .search-box i {
-      position: absolute;
-      left: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-sub);
-      font-size: 13px;
-    }
-
-    .filter-select {
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(148, 163, 184, 0.2);
-      border-radius: 8px;
-      padding: 8px 12px;
-      color: var(--text-main);
-      font-size: 13px;
-      outline: none;
-      cursor: pointer;
-    }
-
-    /* 卡片列表网格 */
-    .feedbacks-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      flex-direction: column;
       gap: 18px;
     }
 
-    .fb-card {
-      background: var(--card-bg);
-      backdrop-filter: blur(16px);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 18px;
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .brand-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-icon {
+      font-size: 28px;
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .brand-text h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      background: linear-gradient(90deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .brand-text p {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* KPI 统计卡片栅格 */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+    }
+
+    .kpi-card {
+      background: rgba(22, 34, 56, 0.6);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 12px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transition: border-color 0.2s ease;
+      cursor: default;
+    }
+    .kpi-card:hover {
+      border-color: rgba(56, 189, 248, 0.4);
+    }
+    .kpi-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .kpi-value {
+      font-size: 24px;
+      font-weight: 800;
+      color: #ffffff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .kpi-p0 { color: var(--accent-p0); }
+    .kpi-p1 { color: var(--accent-p1); }
+    .kpi-pending { color: #f59e0b; }
+    .kpi-resolved { color: var(--accent-success); }
+
+    /* =========================================================================
+     * 🌟 一体化五端排障决策与层级细分筛选中枢 (Unified Filter Hub)
+     * ========================================================================= */
+    .unified-filter-hub {
+      background: #0f172a;
+      border: 1px solid rgba(56, 189, 248, 0.28);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      position: relative;
+    }
+    .hub-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .hub-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .hub-main-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hub-sort-desc {
+      font-size: 11.5px;
+      color: #94a3b8;
+    }
+    .tcc-sort-toggle {
+      display: inline-flex;
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 2px;
+      gap: 2px;
+      margin-left: 6px;
+    }
+    .tcc-sort-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .tcc-sort-btn.active {
+      background: #0284c7;
+      color: #fff;
+    }
+
+    /* 一级：端卡片网格 */
+    .terminal-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .terminal-card {
+      background: #1e293b;
+      border: 1.5px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 10px 12px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .terminal-card:hover {
+      border-color: #38bdf8;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 14px rgba(56, 189, 248, 0.15);
+    }
+    .terminal-card.active {
+      background: #0f2744;
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.35);
+    }
+    .tc-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .tc-name-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #f8fafc;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tc-pending-pill {
+      font-size: 10.5px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 4px;
+      line-height: 1.2;
+      white-space: nowrap;
+    }
+    .tc-pending-pill.pill-has-pending {
+      background: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+    .tc-pending-pill.pill-zero {
+      background: rgba(16, 185, 129, 0.15);
+      color: #6ee7b7;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .tc-metrics-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 4px;
+      font-size: 10.5px;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 4px 6px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .tc-metric-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .tc-metric-label {
+      color: #94a3b8;
+      font-size: 9.5px;
+    }
+    .tc-metric-val {
+      font-weight: 800;
+      font-size: 11px;
+    }
+    .tc-val-defect { color: #f87171; }
+    .tc-val-pending-deploy { color: #fbbf24; }
+    .tc-val-deployed { color: #34d399; }
+
+    /* 二级：下级细化拆分筛选区 */
+    .sub-filter-cascade {
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .cascade-scope-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      flex-wrap: wrap;
+    }
+    .cascade-scope-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .cascade-scope-hint {
+      font-size: 11px;
+      color: #64748b;
+    }
+    .cascade-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .cascade-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .cascade-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #94a3b8;
+      min-width: 82px;
+      padding-top: 3px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .cascade-pills {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      flex: 1;
+    }
+    .cascade-pill {
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .cascade-pill:hover {
+      border-color: #38bdf8;
+      color: #fff;
+    }
+    .cascade-pill.active {
+      background: #0284c7;
+      color: #fff;
+      border-color: #38bdf8;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+      font-weight: 700;
+    }
+    .cascade-pill.lc-defect.active {
+      background: rgba(239, 68, 68, 0.25);
+      color: #fca5a5;
+      border-color: #ef4444;
+    }
+    .cascade-pill.lc-pending-deploy.active {
+      background: rgba(245, 158, 11, 0.25);
+      color: #fde68a;
+      border-color: #f59e0b;
+    }
+    .cascade-pill.lc-deployed.active {
+      background: rgba(16, 185, 129, 0.25);
+      color: #a7f3d0;
+      border-color: #10b981;
+    }
+
+    .module-bar-container {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      flex: 1;
+    }
+    .module-pill {
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 3px 10px;
+      font-size: 11px;
+      color: #cbd5e1;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .module-pill:hover {
+      border-color: #38bdf8;
+      color: #fff;
+    }
+    .module-pill.active {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #fff;
+      font-weight: 700;
+    }
+    .module-pill-badge {
+      font-size: 9.5px;
+      padding: 0 4px;
+      border-radius: 99px;
+      background: rgba(0,0,0,0.25);
+    }
+
+    .cascade-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 4px;
+      padding-top: 8px;
+      border-top: 1px dashed rgba(255, 255, 255, 0.08);
+      flex-wrap: wrap;
+    }
+    .search-box-unified {
+      position: relative;
+      flex: 1;
+      min-width: 240px;
+      max-width: 480px;
+    }
+    .search-box-unified input {
+      width: 100%;
+      background: #0b1120;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 7px 12px 7px 32px;
+      font-size: 12px;
+      color: #fff;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .search-box-unified input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary-glow);
+    }
+    .search-box-unified .search-icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 13px;
+      color: var(--text-dim);
+      pointer-events: none;
+    }
+    .cascade-result-badge {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* 按钮样式规范 */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      font-size: 12.5px;
+      font-weight: 600;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+    .btn-primary:hover {
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.45);
+      transform: translateY(-1px);
+    }
+    .btn-outline {
+      background: rgba(22, 34, 56, 0.8);
+      border-color: var(--border-subtle);
+      color: var(--text-main);
+    }
+    .btn-outline:hover {
+      background: #1c2b47;
+      border-color: var(--text-muted);
+      color: #fff;
+    }
+    .btn-success {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.35);
+      color: #34d399;
+    }
+    .btn-success:hover {
+      background: rgba(16, 185, 129, 0.25);
+    }
+    .btn-prompt {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+      border-color: #6366f1;
+      color: #c7d2fe;
+    }
+    .btn-prompt:hover {
+      background: linear-gradient(135deg, #312e81 0%, #4338ca 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+      transform: translateY(-1px);
+    }
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.2);
+    }
+    .btn-sm {
+      padding: 5px 9px;
+      font-size: 11.5px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* ==========================================================================
+       🌟 全景平铺工作台工单流 (Panorama Diagnostic Dossier Workstation)
+       ========================================================================== */
+    .cards-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .feedback-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+    }
+    .feedback-card:hover {
+      border-color: #38bdf8;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6), 0 0 20px rgba(56, 189, 248, 0.18);
+      transform: translateY(-2px);
+    }
+    .feedback-card.is-resolved {
+      opacity: 0.88;
+      border-color: rgba(16, 185, 129, 0.35);
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    /* 1. 顶栏：工单编号、级别、状态、精确时间、所属端 */
+    .card-top-bar {
+      padding: 12px 20px;
+      background: rgba(15, 23, 42, 0.98);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+    .card-top-right {
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .card-top-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .badge-ticket-idx {
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      font-weight: 800;
+      font-size: 11.5px;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+    }
+    .pill {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 6px;
+      letter-spacing: 0.3px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .pill-p0 { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+    .pill-p1 { background: #ffedd5; color: #c2410c; border: 1px solid #fdba74; }
+    .pill-p2 { background: #fef3c7; color: #b45309; border: 1px solid #fcd34d; }
+    .pill-p3 { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
+    
+    .pill-status-pending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .pill-status-resolved { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); }
+    .pill-type { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
+    .pill-origin-online { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35); font-weight: 700; }
+    .pill-origin-local { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.35); font-weight: 700; }
+
+    .card-top-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 11.5px;
+      color: var(--text-dim);
+      font-family: ui-monospace, SFMono-Regular, monospace;
+    }
+
+    /* 2. 主体紧凑排障工单：左侧精致快照预览 (240px) + 右侧自适应决策区 (minmax(0, 1fr)) */
+    .card-dossier-body {
+      padding: 16px 18px;
+      display: grid;
+      grid-template-columns: 240px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+      min-width: 0;
+      max-width: 100%;
+    }
+    @media (max-width: 1080px) {
+      .card-dossier-body {
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .dossier-col-snapshot {
+        max-width: 320px;
+        width: 100%;
+        margin: 0 auto;
+      }
+    }
+
+    /* 左侧精致快照列 (自适应比例 / 减少黑边与空旷感) */
+    .dossier-col-snapshot {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #080d1a;
+      border: 1px solid #1e293b;
+      border-radius: var(--radius-sm);
+      padding: 10px;
+    }
+    .snapshot-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: #94a3b8;
+    }
+    .btn-zoom-preview {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #38bdf8;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-zoom-preview:hover {
+      background: rgba(56, 189, 248, 0.25);
+      color: #fff;
+    }
+    .snapshot-viewport-wrap {
+      width: 100%;
+      height: 280px;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid #273549;
+      background: #020617;
+      cursor: pointer;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease-in-out;
+    }
+    .snapshot-viewport-wrap:hover {
+      border-color: #38bdf8;
+      box-shadow: 0 4px 14px rgba(56, 189, 248, 0.22);
+    }
+    .snapshot-img-full {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      transition: transform 0.2s ease;
+    }
+    .snapshot-overlay-hover {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.65);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #38bdf8;
+      font-weight: 700;
+      opacity: 0;
+      transition: opacity 0.2s;
+      backdrop-filter: blur(2px);
+    }
+    .snapshot-viewport-wrap:hover .snapshot-overlay-hover {
+      opacity: 1;
+    }
+    .snapshot-meta-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10.5px;
+      color: var(--text-dim);
+      padding: 1px 2px;
+    }
+
+    /* 右侧自适应决策主干 (强制 min-width: 0 杜绝长文本或URL撑爆) */
+    .dossier-col-main {
       display: flex;
       flex-direction: column;
       gap: 12px;
-      transition: all 0.25s ease;
-      position: relative;
+      min-width: 0;
+      max-width: 100%;
       overflow: hidden;
     }
 
-    .fb-card:hover {
-      border-color: var(--card-border-hover);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    /* 模块A: 精确端与页面导航条 (带直达链接) */
+    .dossier-page-banner {
+      background: rgba(30, 41, 59, 0.45);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .page-banner-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .page-banner-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .page-banner-path {
+      font-size: 11.5px;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      color: #38bdf8;
+      background: #090e1a;
+      padding: 2px 7px;
+      border-radius: 4px;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+      word-break: break-all;
+      overflow-wrap: anywhere;
+      white-space: normal;
+      max-width: 100%;
+    }
+    .dossier-page-banner {
+      min-width: 0;
+      max-width: 100%;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .dossier-page-banner code {
+      word-break: break-all;
+      overflow-wrap: anywhere;
+      white-space: normal;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    .dossier-page-meta {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 12px;
+      color: #bae6fd;
+      font-size: 11.5px;
+      min-width: 0;
+      max-width: 100%;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+    }
+    .dossier-page-meta span, .dossier-page-meta code {
+      min-width: 0;
+      max-width: 100%;
+      word-break: break-all;
+      overflow-wrap: anywhere;
+      white-space: normal;
+    }
+    .btn-open-target-page {
+      font-size: 11px;
+      color: #93c5fd;
+      background: rgba(37, 99, 235, 0.15);
+      border: 1px solid rgba(37, 99, 235, 0.35);
+      padding: 2px 8px;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+    .btn-open-target-page:hover {
+      background: #2563eb;
+      color: #fff;
     }
 
-    .fb-card.resolved {
-      border-left: 4px solid var(--success);
+    /* 模块B: 用户反馈内容与现象描述 (极致自适应 / 彻底去除空白与无用空隙) */
+    .dossier-section {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .section-label-bar {
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      letter-spacing: 0.2px;
+    }
+    .feedback-content-card {
+      background: #080e1c;
+      border: 1px solid #1e293b;
+      border-left: 3px solid #38bdf8;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 13px;
+      color: #f1f5f9;
+      line-height: 1.5;
+      white-space: normal;
+      word-break: break-all;
+      height: auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .feedback-title-compact {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .feedback-desc-text {
+      color: #cbd5e1;
+      font-size: 12.5px;
+      line-height: 1.5;
+      white-space: pre-line;
     }
 
-    .fb-card.pending {
-      border-left: 4px solid var(--warning);
-    }
-
-    .fb-card.p0 { border-top: 2px solid var(--danger); }
-
-    .card-head {
+    /* 模块C: 辅助日志折叠抽屉与可拖拽缩放盒子 (Resizable Logs Box) */
+    .logs-drawer-header {
+      background: #080d1a;
+      border: 1px solid #1e293b;
+      border-radius: var(--radius-sm);
+      padding: 9px 14px;
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s ease;
+    }
+    .logs-drawer-header:hover {
+      border-color: rgba(56, 189, 248, 0.4);
+      background: #0c1427;
+    }
+    .logs-badge-count {
+      background: #1e293b;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid #334155;
+    }
+    .resizable-logs-box {
+      margin-top: 6px;
+      background: #060911;
+      border: 1px solid #334155;
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      resize: vertical;
+      overflow-y: auto;
+      min-height: 100px;
+      max-height: 520px;
+      height: 180px;
+      position: relative;
+    }
+    .logs-resize-tip {
+      font-size: 10.5px;
+      color: var(--text-dim);
+      padding-bottom: 6px;
+      margin-bottom: 6px;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .steps-timeline-card {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .step-item-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      font-size: 11.5px;
+      line-height: 1.5;
+      padding: 4px 0;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+    }
+    .step-item-row:last-child {
+      border-bottom: none;
+    }
+    .step-badge-num {
+      background: #1e293b;
+      color: #94a3b8;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-family: ui-monospace, monospace;
+    }
+    .step-badge-tag {
+      color: #38bdf8;
+      font-weight: 700;
+      font-family: ui-monospace, monospace;
+      font-size: 11px;
+    }
+    .step-badge-error {
+      color: #f87171;
+      font-weight: 700;
+      font-family: ui-monospace, monospace;
+      font-size: 11px;
+    }
+
+    /* 模块D: 🛠️ 工程师指导与修复方案 (主导区) */
+    .engineer-workspace-card {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.8) 100%);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    }
+    .engineer-workspace-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .engineer-textarea-full {
+      width: 100%;
+      min-height: 48px; height: 52px;
+      background: #060911;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: #f1f5f9;
+      font-size: 13px;
+      line-height: 1.5;
+      font-family: inherit;
+      resize: vertical;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .engineer-textarea-full:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+    }
+    .engineer-workspace-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* 3. 底部操作工具栏 */
+    .card-bottom-bar {
+      padding: 12px 20px;
+      background: rgba(15, 23, 42, 0.98);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
       gap: 10px;
     }
 
-    .card-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-main);
-      line-height: 1.4;
-      flex: 1;
-    }
-
-    .tag-group {
-      display: flex;
-      gap: 6px;
-      flex-shrink: 0;
-    }
-
-    .tag {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 6px;
-      border-radius: 4px;
-      text-transform: uppercase;
-    }
-
-    .tag.p0 { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
-    .tag.p1 { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
-    .tag.p2 { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); }
-    .tag.p3 { background: rgba(148, 163, 184, 0.2); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.4); }
-
-    .tag.status-pending { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-    .tag.status-resolved { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-    .tag.status-trash { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-
-    .card-desc {
-      font-size: 12.5px;
-      color: var(--text-muted);
+    /* 4. Prompt 预览视窗 */
+    .prompt-preview-drawer {
+      padding: 14px 20px;
+      background: #040711;
+      border-top: 1px solid #1e293b;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+      color: #93c5fd;
       line-height: 1.5;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 280px;
+      overflow-y: auto;
     }
 
-    /* 智能代码定位胶囊 (Remote ➔ Local) */
-    .location-box {
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(56, 189, 248, 0.18);
-      border-radius: 8px;
-      padding: 8px 10px;
-      font-size: 11px;
+    /* 结案报告卡片 */
+    .resolution-box-full {
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #34d399;
       display: flex;
       flex-direction: column;
       gap: 4px;
     }
 
-    .loc-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .loc-label {
-      font-weight: 600;
-      color: var(--text-sub);
-      font-size: 10px;
-      flex-shrink: 0;
-    }
-
-    .loc-val {
-      color: var(--primary);
-      font-family: monospace;
-      font-size: 11px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      cursor: pointer;
-    }
-
-    .loc-val:hover {
-      text-decoration: underline;
-    }
-
-    .card-meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 11px;
-      color: var(--text-sub);
-      margin-top: 4px;
-    }
-
-    /* 操作按键组 */
-    .card-actions {
-      display: flex;
-      gap: 8px;
-      margin-top: 4px;
-    }
-
-    .btn-card {
-      flex: 1;
-      padding: 6px 10px;
-      border-radius: 6px;
-      border: 1px solid rgba(148, 163, 184, 0.2);
-      background: rgba(30, 41, 59, 0.6);
-      color: var(--text-main);
-      font-size: 11px;
-      font-weight: 500;
-      cursor: pointer;
-      display: flex;
+    /* 全屏 Lightbox 弹窗 */
+    #lightbox-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      backdrop-filter: blur(10px);
+      z-index: 99999;
+      display: none;
       align-items: center;
       justify-content: center;
-      gap: 5px;
-      transition: all 0.2s;
+      padding: 24px;
+    }
+    #lightbox-modal.active { display: flex; }
+    .lightbox-wrapper {
+      position: relative;
+      max-width: 94vw;
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .lightbox-image {
+      max-width: 100%;
+      max-height: 82vh;
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .lightbox-close {
+      position: absolute;
+      top: -16px;
+      right: -16px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #fff;
+      color: #0f172a;
+      border: none;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
     }
 
-    .btn-card:hover {
-      background: rgba(56, 189, 248, 0.2);
-      border-color: var(--primary);
-      color: #fff;
+    /* 结案反馈模态层 */
+    #resolve-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(6px);
+      z-index: 99998;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    #resolve-modal.active { display: flex; }
+    .modal-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 520px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: var(--shadow-card);
     }
 
-    .btn-card.danger:hover {
-      background: rgba(239, 68, 68, 0.2);
-      border-color: var(--danger);
-      color: #fca5a5;
+    /* Toast 通知 */
+    #toast {
+      position: fixed;
+      top: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #0d2137 0%, #1e3a5f 100%);
+      border: 1px solid #38bdf8;
+      color: #ffffff;
+      padding: 10px 22px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 100000;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      display: none;
+      animation: fadeIn 0.2s ease-out;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translate(-50%, -10px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+    
+    .feedback-card.card-just-resolved {
+      animation: resolvePulse 1.2s ease-out;
+      border-color: #10b981 !important;
+      box-shadow: 0 0 30px rgba(16, 185, 129, 0.45) !important;
+    }
+    @keyframes resolvePulse {
+      0% { transform: scale(0.99); box-shadow: 0 0 40px rgba(16, 185, 129, 0.7); }
+      50% { transform: scale(1.008); box-shadow: 0 0 30px rgba(16, 185, 129, 0.5); }
+      100% { transform: scale(1); box-shadow: 0 6px 24px rgba(0,0,0,0.4); }
     }
 
-    .btn-card.success:hover {
-      background: rgba(16, 185, 129, 0.2);
-      border-color: var(--success);
-      color: #6ee7b7;
+    
+    .engineer-textarea-highlight {
+      animation: notePulse 1.8s ease-in-out;
+      border-color: #38bdf8 !important;
+      box-shadow: 0 0 25px rgba(56, 189, 248, 0.6) !important;
+    }
+    @keyframes notePulse {
+      0% { box-shadow: 0 0 35px rgba(56, 189, 248, 0.8); border-color: #38bdf8; }
+      50% { box-shadow: 0 0 20px rgba(56, 189, 248, 0.4); border-color: #0284c7; }
+      100% { box-shadow: none; }
     }
 
-    /* 空状态与模态框 */
+    /* 空状态 */
     .empty-state {
       grid-column: 1 / -1;
-      text-align: center;
       padding: 60px 20px;
-      color: var(--text-sub);
+      text-align: center;
+      background: var(--bg-surface);
+      border: 1px dashed var(--border-subtle);
+      border-radius: var(--radius-lg);
+      color: var(--text-muted);
     }
 
-    .empty-state i {
-      font-size: 44px;
-      margin-bottom: 12px;
-      opacity: 0.4;
-    }
-
-    /* Toast 提示 */
-    #zj-toast {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: rgba(15, 23, 42, 0.95);
-      backdrop-filter: blur(12px);
-      border: 1px solid var(--primary);
-      color: #fff;
-      padding: 10px 18px;
-      border-radius: 8px;
-      font-size: 13px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-      z-index: 9999;
-      transform: translateY(100px);
-      opacity: 0;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    #zj-toast.show {
-      transform: translateY(0);
-      opacity: 1;
+    @media (max-width: 768px) {
+      body { padding: 12px; }
+      header { padding: 16px; }
+      .cards-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
 
-  <!-- 顶部导航栏 -->
-  <div class="header-bar">
-    <div class="title-group">
-      <div class="logo-icon"><i class="fa-solid fa-bug"></i></div>
-      <div class="header-titles">
-        <h1>
-          反馈与 Agent 闭环排障中枢
-          <span class="version-tag">V3.1 双模式实时版</span>
-        </h1>
-        <p>统一数据底座 · 智能源码映射 · MCP 实时回推 · 动态无感热刷新</p>
+  <!-- 顶部中枢看板 -->
+  <header>
+    <div class="header-top">
+      <div class="brand-title">
+        <div class="brand-icon">🐞</div>
+        <div class="brand-text">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <h1 style="margin:0;">正杰全球聘 · 原型反馈与 Agent 闭环排障中枢</h1>
+            <span style="background:#10b981; color:#fff; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px;">V5.3 纯净生产版</span>
+          </div>
+          <p style="margin-top:4px;">多端真实快照 | 操作轨迹与系统诊断 | 智能生成 MCP 修复 Prompt | 双向实时同步</p>
+        </div>
       </div>
-    </div>
+      <div class="header-actions">
+        <!-- 🌟 V3.1 双模式切换开关 -->
+        <div style="display:inline-flex; background:rgba(15,23,42,0.85); border:1px solid rgba(56,189,248,0.3); border-radius:8px; padding:2px; margin-right:6px;">
+          <button id="btn-mode-online" onclick="setDashboardMode('online')" style="padding:5px 12px; border-radius:6px; border:none; background:linear-gradient(135deg,#0284c7,#0369a1); color:#fff; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
+            🌐 线上模式
+          </button>
+          <button id="btn-mode-local" onclick="setDashboardMode('local')" style="padding:5px 12px; border-radius:6px; border:none; background:transparent; color:#94a3b8; font-size:12px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
+            💻 线下模式
+          </button>
+        </div>
 
-    <!-- 模式切换与控制组 -->
-    <div class="controls-group">
-      <!-- 模式切换开关 -->
-      <div class="mode-switcher">
-        <button id="btnModeOnline" class="mode-btn online" onclick="switchMode('online')">
-          <i class="fa-solid fa-globe"></i> 线上模式
+        <!-- 🌟 2秒无感热刷新开关与呼吸灯 -->
+        <button class="btn btn-outline" id="btn-toggle-autorefresh" onclick="toggleAutoRefresh()" style="border-color:rgba(16,185,129,0.4); color:#34d399; display:inline-flex; align-items:center; gap:6px;">
+          <span style="width:8px; height:8px; border-radius:50%; background:#10b981; display:inline-block; box-shadow:0 0 6px #10b981;" id="live-dot"></span>
+          <span id="txt-autorefresh">热刷新: 开 (2s)</span>
         </button>
-        <button id="btnModeLocal" class="mode-btn local active" onclick="switchMode('local')">
-          <i class="fa-solid fa-laptop-code"></i> 线下模式
+
+        <a class="btn btn-outline" href="index.html" style="text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
+          🏠 五端演示中心
+        </a>
+        <a class="btn btn-outline" href="checking.html" style="text-decoration:none; display:inline-flex; align-items:center; gap:5px; border-color:#38bdf8; color:#38bdf8;">
+          📋 五端验收大厅
+        </a>
+        <button class="btn btn-danger" id="btn-clear-all" title="清空全部测试数据，重置本地与云端数据库">🧹 清空全部测试数据</button>
+        <button class="btn btn-primary" id="btn-sync-all" title="与云端/测试服务器双向拉取与推送">
+          🔄 立即全量双向同步
         </button>
+        <button class="btn btn-outline" id="btn-export-md" title="导出 Markdown 格式清单">
+          📋 导出 Markdown
+        </button>
+        <button class="btn btn-outline" id="btn-export-json" title="导出 JSON 数据包">
+          💾 导出 JSON
+        </button>
+        <button class="btn btn-outline" onclick="openUrlMappingModal()" style="border-color:#818cf8; color:#a5b4fc;" title="查看和管理 远程URL 到 本地源码文件 的映射规则">
+          🗺️ 页面位置映射
+        </button>
+        <button class="btn btn-outline" id="btn-view-trash" onclick="toggleTrashView()" style="border-color:rgba(239,68,68,0.4); color:#fca5a5;" title="查看软删除垃圾箱">
+          🗑️ 垃圾箱 (<span id="cnt-trash-top">0</span>)
+        </button>
+        <a href="/mcp" target="_blank" class="btn btn-outline">
+          🌐 远程 MCP 信息
+        </a>
+      </div>
+    </div>
+
+    <!-- 实时指标统计卡片 -->
+    <div class="kpi-grid">
+      <div class="kpi-card" data-kpi="all">
+        <div class="kpi-label"><span>📦 全部反馈总数</span> <span>ALL</span></div>
+        <div class="kpi-value" id="val-total">0</div>
+      </div>
+      <div class="kpi-card" data-kpi="pending">
+        <div class="kpi-label"><span>⏳ 待解决 (待排障)</span> <span>PENDING</span></div>
+        <div class="kpi-value kpi-pending" id="val-pending">0</div>
+      </div>
+      <div class="kpi-card" data-kpi="p0p1">
+        <div class="kpi-label"><span>🚨 P0/P1 核心阻断</span> <span>HIGH</span></div>
+        <div class="kpi-value kpi-p0" id="val-high-sev">0</div>
+      </div>
+      <div class="kpi-card" data-kpi="resolved">
+        <div class="kpi-label"><span>✅ 已闭环解决</span> <span>DONE</span></div>
+        <div class="kpi-value kpi-resolved" id="val-resolved">0</div>
+      </div>
+      <div class="kpi-card" data-kpi="snapshots">
+        <div class="kpi-label"><span>📸 真实物理快照</span> <span>PNG</span></div>
+        <div class="kpi-value" id="val-snaps" style="color:#38bdf8;">0</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 🌟 一体化五端决策与层级细分排障中枢 (整合成一块 · 层级联动透视) -->
+  <div class="unified-filter-hub" id="unified-filter-hub">
+    <!-- 1. 一级：端决策中枢头部 (由小到大排序 + 重置筛选) -->
+    <div class="hub-header">
+      <div class="hub-header-left">
+        <span class="hub-main-title">📱 五端排障中枢与层级下钻透视</span>
+        <span class="hub-sort-desc">(各端按待解决缺陷数 <strong id="tcc-sort-desc-text">由小到大 ⬆️</strong> 自动排列)</span>
+        <div class="tcc-sort-toggle">
+          <button class="tcc-sort-btn active" id="btn-sort-asc" onclick="setTerminalSort('asc')" title="由小到大排列 (待处理少 ➔ 多)">由小到大 ⬆️</button>
+          <button class="tcc-sort-btn" id="btn-sort-desc" onclick="setTerminalSort('desc')" title="由大到小排列 (待处理多 ➔ 少)">由大到小 ⬇️</button>
+        </div>
+      </div>
+      <div class="hub-header-right">
+        <button class="btn btn-outline btn-sm" id="btn-reset-filters" onclick="resetAllFilters()" style="font-size:11.5px; padding:4px 10px;" title="重置全部筛选条件，恢复全景视图">🔄 重置全部筛选</button>
+      </div>
+    </div>
+
+    <!-- 2. 全部端 + 5大核心端卡片选择器网格 -->
+    <div class="terminal-cards-grid" id="terminal-cards-container">
+      <!-- 动态渲染全部端 + 5大端卡片，高亮当前选中的端 -->
+    </div>
+
+    <!-- 3. 二级：当前选定端底下的专属细化拆分筛选区 (所有数据与当前端动态联动！) -->
+    <div class="sub-filter-cascade" id="sub-filter-cascade">
+      <div class="cascade-scope-bar">
+        <span class="cascade-scope-title">
+          <span>🔍 当前透视作用域:</span>
+          <strong id="scope-terminal-name" style="color:#38bdf8; font-size:13.5px;">🌐 全部端 (全景视图)</strong>
+        </span>
+        <span class="cascade-scope-hint">（下方所有分类数量与模块均随当前选中的端【动态联动】更新）</span>
       </div>
 
-      <!-- 热刷新开关与指示灯 -->
-      <button id="btnAutoRefresh" class="btn-action" onclick="toggleAutoRefresh()">
-        <span class="live-dot" id="liveDot"></span>
-        <span id="txtRefresh">实时热刷新: 开 (2s)</span>
-      </button>
+      <div class="cascade-rows">
+        <!-- 维度 1: 实施上线阶段 (三态生命周期) -->
+        <div class="cascade-row">
+          <span class="cascade-label">🚀 上线阶段:</span>
+          <div class="cascade-pills" id="group-lifecycle">
+            <button class="cascade-pill active" data-lc="all" onclick="selectLifecycle('all')">全部问题 (<span id="cnt-lc-all">0</span>)</button>
+            <button class="cascade-pill lc-defect" data-lc="defect" onclick="selectLifecycle('defect')" title="待解决的真实缺陷">🔴 带缺陷 (<span id="cnt-lc-defect">0</span>)</button>
+            <button class="cascade-pill lc-pending-deploy" data-lc="pending_deploy" onclick="selectLifecycle('pending_deploy')" title="本地已结案待推线上">🟡 待上线 (<span id="cnt-lc-pending-deploy">0</span>)</button>
+            <button class="cascade-pill lc-deployed" data-lc="deployed" onclick="selectLifecycle('deployed')" title="已在线上或本地完成发版上线">🟢 本地上线/已上线 (<span id="cnt-lc-deployed">0</span>)</button>
+          </div>
+        </div>
 
-      <button class="btn-action" onclick="fetchData(true)">
-        <i class="fa-solid fa-rotate"></i> 手动刷新
-      </button>
+        <!-- 维度 2: 问题业务类型 (缺陷/流程/文案/设计) -->
+        <div class="cascade-row">
+          <span class="cascade-label">🏷️ 问题类型:</span>
+          <div class="cascade-pills" id="group-type">
+            <button class="cascade-pill active" data-type="all" onclick="selectFilterType('all')">全部类型 (<span id="cnt-type-all">0</span>)</button>
+            <button class="cascade-pill" data-type="bug" onclick="selectFilterType('bug')">🐛 功能缺陷 (<span id="cnt-type-bug">0</span>)</button>
+            <button class="cascade-pill" data-type="flow" onclick="selectFilterType('flow')">⚡ 业务流程 (<span id="cnt-type-flow">0</span>)</button>
+            <button class="cascade-pill" data-type="ux" onclick="selectFilterType('ux')">💬 文案交互 (<span id="cnt-type-ux">0</span>)</button>
+            <button class="cascade-pill" data-type="design" onclick="selectFilterType('design')">🎨 设计建议 (<span id="cnt-type-design">0</span>)</button>
+          </div>
+        </div>
 
-      <a href="index.html" class="btn-action" style="text-decoration: none;">
-        <i class="fa-solid fa-house"></i> 演示大厅
-      </a>
+        <!-- 维度 3: 工单处理状态 (待解决/已完成/回收站) -->
+        <div class="cascade-row">
+          <span class="cascade-label">📌 处理状态:</span>
+          <div class="cascade-pills" id="group-status">
+            <button class="cascade-pill active" data-status="all" onclick="selectFilterStatus('all')">全部状态 (<span id="cnt-status-all">0</span>)</button>
+            <button class="cascade-pill" data-status="pending" onclick="selectFilterStatus('pending')">⏳ 待解决 (<span id="cnt-status-pending">0</span>)</button>
+            <button class="cascade-pill" data-status="resolved" onclick="selectFilterStatus('resolved')">✅ 已完成 (<span id="cnt-status-resolved">0</span>)</button>
+            <button class="cascade-pill" data-status="trash" onclick="selectFilterStatus('trash')" style="color:#f87171;">🗑️ 回收站 (<span id="cnt-status-trash">0</span>)</button>
+          </div>
+        </div>
+
+        <!-- 维度 4: 数据归属环境 (线上/本地) -->
+        <div class="cascade-row">
+          <span class="cascade-label">🌐 归属环境:</span>
+          <div class="cascade-pills" id="group-origin">
+            <button class="cascade-pill active" data-origin="all" onclick="selectFilterOrigin('all')">全部来源 (<span id="cnt-origin-all">0</span>)</button>
+            <button class="cascade-pill" data-origin="online" onclick="selectFilterOrigin('online')" style="color:#38bdf8;">🌐 线上服务器 (<span id="cnt-origin-online">0</span>)</button>
+            <button class="cascade-pill" data-origin="local" onclick="selectFilterOrigin('local')" style="color:#94a3b8;">💻 本地工作区 (<span id="cnt-origin-local">0</span>)</button>
+          </div>
+        </div>
+
+        <!-- 维度 5: 该端专属功能模块穿透 (动态联动芯片，由小到大排序) -->
+        <div class="cascade-row" id="row-modules">
+          <span class="cascade-label">🧩 功能模块:</span>
+          <div class="module-bar-container" id="module-bar-container">
+            <!-- 动态生成该端专属功能模块芯片 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 底栏：搜索框与当前筛选结果计数 -->
+      <div class="cascade-footer">
+        <div class="search-box-unified">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="search-input" placeholder="在当前端/筛选条件下搜索工单标题、描述、人员、ID 或模块..." oninput="onSearchInput(this.value)">
+        </div>
+        <div class="cascade-result-badge">
+          <span id="filter-result-count">共筛选出 0 条工单</span>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- KPI 概览卡片 -->
-  <div class="kpi-grid">
-    <div class="kpi-card">
-      <div>
-        <div class="kpi-num" id="kpiTotal" style="color: var(--primary);">--</div>
-        <div class="kpi-label">工单总数 (活跃)</div>
-      </div>
-      <div class="kpi-icon" style="color: var(--primary);"><i class="fa-solid fa-list-check"></i></div>
-    </div>
+  <!-- 反馈列表网格 -->
+  <div class="cards-grid" id="cards-container">
+    <div class="empty-state">正在加载反馈数据...</div>
+  </div>
 
-    <div class="kpi-card">
-      <div>
-        <div class="kpi-num" id="kpiPending" style="color: var(--warning);">--</div>
-        <div class="kpi-label">待排查修复</div>
-      </div>
-      <div class="kpi-icon" style="color: var(--warning);"><i class="fa-solid fa-clock"></i></div>
-    </div>
-
-    <div class="kpi-card">
-      <div>
-        <div class="kpi-num" id="kpiResolved" style="color: var(--success);">--</div>
-        <div class="kpi-label">已闭环解决</div>
-      </div>
-      <div class="kpi-icon" style="color: var(--success);"><i class="fa-solid fa-circle-check"></i></div>
-    </div>
-
-    <div class="kpi-card">
-      <div>
-        <div class="kpi-num" id="kpiMappings" style="color: var(--accent);">--</div>
-        <div class="kpi-label">已映射规则数</div>
-      </div>
-      <div class="kpi-icon" style="color: var(--accent);"><i class="fa-solid fa-map-location-dot"></i></div>
-    </div>
-
-    <div class="kpi-card">
-      <div>
-        <div class="kpi-num" id="kpiTrash" style="color: var(--danger);">--</div>
-        <div class="kpi-label">软删除垃圾箱</div>
-      </div>
-      <div class="kpi-icon" style="color: var(--danger);"><i class="fa-solid fa-trash-can"></i></div>
+  <!-- 全屏 Lightbox 弹窗 -->
+  <div id="lightbox-modal">
+    <div class="lightbox-wrapper">
+      <button class="lightbox-close" id="btn-close-lightbox">✕</button>
+      <img src="" id="lightbox-img" class="lightbox-image" alt="真实快照高清原图">
+      <div style="color:#fff; font-size:13px; font-weight:600;" id="lightbox-caption">📸 真实页面快照</div>
     </div>
   </div>
 
-  <!-- 三栏 Tab 导航 -->
-  <div class="main-tabs">
-    <div class="tab-item active" id="tabActive" onclick="switchTab('active')">
-      <i class="fa-solid fa-table-list"></i> 活跃工单治理
-      <span class="tab-badge" id="badgeActiveCount">0</span>
-    </div>
-    <div class="tab-item" id="tabMappings" onclick="switchTab('mappings')">
-      <i class="fa-solid fa-map-location-dot"></i> 页面位置映射中枢
-      <span class="tab-badge" id="badgeMappingsCount">0</span>
-    </div>
-    <div class="tab-item" id="tabTrash" onclick="switchTab('trash')">
-      <i class="fa-solid fa-trash-can"></i> 软删除垃圾箱
-      <span class="tab-badge" id="badgeTrashCount">0</span>
-    </div>
-  </div>
-
-  <!-- 过滤工具栏 (仅活跃工单下显示) -->
-  <div class="filter-bar" id="filterBar">
-    <div class="search-box">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" id="searchInput" placeholder="搜索标题、描述、本地源码路径、提单人..." oninput="filterFeedbacks()">
-    </div>
-
-    <select class="filter-select" id="filterStatus" onchange="filterFeedbacks()">
-      <option value="all">全部状态</option>
-      <option value="pending" selected>⏳ 待处理 (Pending)</option>
-      <option value="resolved">✅ 已解决 (Resolved)</option>
-    </select>
-
-    <select class="filter-select" id="filterSeverity" onchange="filterFeedbacks()">
-      <option value="all">全部优先级</option>
-      <option value="P0">P0 (紧急阻断)</option>
-      <option value="P1">P1 (严重核心)</option>
-      <option value="P2">P2 (一般功能)</option>
-      <option value="P3">P3 (轻微建议)</option>
-    </select>
-
-    <select class="filter-select" id="filterTerminal" onchange="filterFeedbacks()">
-      <option value="all">全部终端模块</option>
-      <option value="q">求职者小程序端</option>
-      <option value="c">C端经纪人小程序</option>
-      <option value="b-app">B端企业小程序</option>
-      <option value="b-web">B端企业Web后台</option>
-      <option value="op">平台运营端</option>
-    </select>
-  </div>
-
-  <!-- 卡片内容容器 -->
-  <div id="contentView">
-    <div class="feedbacks-grid" id="feedbacksContainer">
-      <!-- 动态渲染工单卡片 -->
+  <!-- 结案弹窗 (标记为已解决) -->
+  <div id="resolve-modal">
+    <div class="modal-card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="font-size:16px; font-weight:700; color:#34d399;">✅ 标记反馈为已解决 (Resolved)</h3>
+        <button style="background:none; border:none; color:#94a3b8; font-size:18px; cursor:pointer;" id="btn-close-resolve">✕</button>
+      </div>
+      <input type="hidden" id="resolve-fb-id">
+      <div>
+        <label style="font-size:12.5px; font-weight:600; color:var(--text-muted); display:block; margin-bottom:4px;">修复结论与验收说明 <span style="color:#ef4444;">*</span></label>
+        <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px;">
+          <button type="button" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 8px;" onclick="document.getElementById('resolve-notes').value='自动化测试通过：已排查页面逻辑并完成本地闭环修复'">⚡ 逻辑修复验证</button>
+          <button type="button" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 8px;" onclick="document.getElementById('resolve-notes').value='已优化交互样式与Tab切换高亮状态，本地验收通过'">⚡ 样式与Tab高亮</button>
+          <button type="button" class="btn btn-outline btn-sm" style="font-size:11px; padding:3px 8px;" onclick="document.getElementById('resolve-notes').value='已核验原型流程并补齐缺失状态，通过功能回归测试'">⚡ 流程与状态闭环</button>
+        </div>
+        <textarea id="resolve-notes" style="width:100%; height:75px; background:#090e1a; border:1px solid var(--border-subtle); border-radius:8px; padding:10px; color:#fff; font-size:13px; outline:none;" placeholder="说明如何修复了该缺陷、修改了哪些文件、验收测试结果..."></textarea>
+      </div>
+      <div>
+        <label style="font-size:12.5px; font-weight:600; color:var(--text-muted); display:block; margin-bottom:6px;">涉及修改的文件 (多行或逗号分隔)</label>
+        <input type="text" id="resolve-files" style="width:100%; background:#090e1a; border:1px solid var(--border-subtle); border-radius:8px; padding:8px 10px; color:#fff; font-size:12.5px; outline:none;" placeholder="如：求职者小程序端/q-wechat-app.html">
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
+        <button class="btn btn-outline" id="btn-cancel-resolve">取消</button>
+        <button class="btn btn-primary" id="btn-confirm-resolve" style="background:#10b981;">确认并同步结案</button>
+      </div>
     </div>
   </div>
 
-  <!-- Toast 提示容器 -->
-  <div id="zj-toast"></div>
+  <!-- Toast 提示 -->
+  <div id="toast">已成功复制提示词！</div>
 
+  
   <script>
+    let allRecords = [];
+    let serverRecordCount = 0;
+
+    
     // =========================================================================
-    // ⚙️ 核心配置与状态管理
+    // 🌟 五端排障中枢与模块分布状态机 (置顶 · 由小到大排列)
     // =========================================================================
-    let currentMode = (window.location.hostname.includes('43.139.67.247')) ? 'online' : 'local'; // 'online' | 'local'
-    let currentTab = 'active';  // 'active' | 'mappings' | 'trash'
-    let autoRefreshEnabled = true;
-    let refreshTimer = null;
-    let lastDataVersion = 0;
+    let terminalSortOrder = 'asc'; // 'asc' (由小到大，默认) | 'desc' (由大到小)
+    let selectedTerminalKey = 'all'; // 'all' | 'b-web' | 'op-web' | 'b-app' | 'c-app' | 'q-app'
+    let selectedModuleKey = 'all'; // 'all' | specific module name
+    let selectedLifecycle = 'all'; // 'all' | 'defect' | 'pending_deploy' | 'deployed'
 
-    let allFeedbacks = [];
-    let allMappings = [];
-    let trashBin = [];
+    const CANONICAL_TERMINALS = [
+      { key: 'b-web', name: 'B端Web管理后台', icon: '🖥️', short: '企业Web' },
+      { key: 'op-web', name: '平台运营管理端', icon: '⚙️', short: '运营端' },
+      { key: 'b-app', name: 'B端企业小程序端', icon: '🏢', short: '企业小程序' },
+      { key: 'c-app', name: 'C端人才经纪人端', icon: '💼', short: '经纪人端' },
+      { key: 'q-app', name: '求职者小程序端', icon: '📱', short: '求职端' }
+    ];
 
-    const ONLINE_API_URL = 'http://43.139.67.247:23333';
-    const LOCAL_API_URL = window.location.protocol.startsWith('http') ? window.location.origin : 'http://127.0.0.1:8888';
-
-    function getApiBase() {
-      return currentMode === 'online' ? ONLINE_API_URL : LOCAL_API_URL;
-    }
-
-    function showToast(msg) {
-      const toast = document.getElementById('zj-toast');
-      toast.innerText = msg;
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 2400);
-    }
-
-    // =========================================================================
-    // 🌐 模式与 Tab 切换
-    // =========================================================================
-    function switchMode(mode) {
-      currentMode = mode;
-      document.getElementById('btnModeOnline').classList.toggle('active', mode === 'online');
-      document.getElementById('btnModeLocal').classList.toggle('active', mode === 'local');
-      showToast(`已切换至: ${mode === 'online' ? '🌐 线上模式 (直连云端服务器)' : '💻 线下模式 (本地离线数据库)'}`);
-      lastDataVersion = 0;
-      fetchData(true);
-    }
-
-    function switchTab(tab) {
-      currentTab = tab;
-      document.getElementById('tabActive').classList.toggle('active', tab === 'active');
-      document.getElementById('tabMappings').classList.toggle('active', tab === 'mappings');
-      document.getElementById('tabTrash').classList.toggle('active', tab === 'trash');
-      document.getElementById('filterBar').style.display = tab === 'active' ? 'flex' : 'none';
-      renderCurrentTab();
-    }
-
-    function toggleAutoRefresh() {
-      autoRefreshEnabled = !autoRefreshEnabled;
-      const dot = document.getElementById('liveDot');
-      const txt = document.getElementById('txtRefresh');
-      if (autoRefreshEnabled) {
-        dot.style.display = 'inline-block';
-        txt.innerText = '实时热刷新: 开 (2s)';
-        showToast('已开启动态无感热刷新');
-      } else {
-        dot.style.display = 'none';
-        txt.innerText = '实时热刷新: 已暂停';
-        showToast('已暂停自动热刷新');
+    function getRecordTerminal(r) {
+      if (!r) return CANONICAL_TERMINALS[1];
+      const text = ((r.pagePath || '') + ' ' + (r.pageTitle || '') + ' ' + (r.url || '') + ' ' + (r.pageRoute || '')).toLowerCase();
+      if (text.includes('q-wechat-app') || text.includes('求职') || text.includes('q_app')) {
+        return CANONICAL_TERMINALS[4];
       }
+      if (text.includes('c-wechat-app') || text.includes('经纪人') || text.includes('c_app')) {
+        return CANONICAL_TERMINALS[3];
+      }
+      if (text.includes('b-wechat-app') || text.includes('企业小程序') || text.includes('企业雇主小程序') || text.includes('b_app')) {
+        return CANONICAL_TERMINALS[2];
+      }
+      if (text.includes('b-web') || text.includes('企业端-web') || text.includes('企业web') || text.includes('管理后台')) {
+        return CANONICAL_TERMINALS[0];
+      }
+      return CANONICAL_TERMINALS[1];
     }
 
-    // =========================================================================
-    // 📡 数据拉取与心跳探测 (Dynamic Refresh)
-    // =========================================================================
-    async function fetchData(forceRender = false) {
-      const apiBase = getApiBase();
-      try {
-        const res = await fetch(`${apiBase}/api/feedback/list?mode=${currentMode}&includeTrash=true&t=${Date.now()}`, { mode: 'cors' });
-        if (!res.ok) throw new Error('Network error');
-        const json = await res.json();
-        
-        if (json && json.success) {
-          const newDataVersion = json.dataVersion || 0;
-          if (forceRender || newDataVersion !== lastDataVersion) {
-            lastDataVersion = newDataVersion;
-            allFeedbacks = json.data || [];
-            trashBin = json.trashBin || [];
-            updateKPIs();
-            renderCurrentTab();
+    function getRecordModule(r) {
+      if (!r) return { key: 'default', name: '默认主视图', raw: '' };
+      const mod = r.activeModuleLabel || r.activeModule || '';
+      const route = r.pageRoute || r.pagePath || '';
+      const combined = (mod + ' ' + route).toLowerCase();
+
+      if (combined.includes('shop') || combined.includes('好店')) return { key: 'shop', name: '金牌严选好店', raw: mod };
+      if (combined.includes('agentauth') || combined.includes('授权')) return { key: 'agent_auth', name: '经纪人授权管理', raw: mod };
+      if (combined.includes('apply') || combined.includes('投递') || combined.includes('interview')) return { key: 'apply', name: '投递与约面', raw: mod };
+      if (combined.includes('message') || combined.includes('消息') || combined.includes('chat')) return { key: 'message', name: '消息与在线微聊', raw: mod };
+      if (combined.includes('resume') || combined.includes('微简历')) return { key: 'resume', name: '微简历中心', raw: mod };
+      if (combined.includes('viewhome') || combined.includes('tabhome') || combined.includes('首页') || combined.includes('工作台')) return { key: 'home', name: '工作台/首页', raw: mod };
+      if (combined.includes('talent') || combined.includes('公海')) return { key: 'talents', name: '私域人才库与推单', raw: mod };
+      if (combined.includes('square') || combined.includes('广场') || combined.includes('抢单')) return { key: 'square', name: '抢单广场', raw: mod };
+      if (combined.includes('tabme') || combined.includes('我的') || combined.includes('钱包') || combined.includes('佣金')) return { key: 'me', name: '我的与佣金资产', raw: mod };
+      if (combined.includes('finance') || combined.includes('充值') || combined.includes('资金')) return { key: 'finance', name: '资金充值与账户', raw: mod };
+      if (combined.includes('p-05') || combined.includes('订单')) return { key: 'p05_order', name: '订单履约与结算', raw: mod };
+      if (combined.includes('p-03') || combined.includes('违规') || combined.includes('处罚')) return { key: 'p03_vio', name: '风控与违规处理', raw: mod };
+      if (combined.includes('p-04') || combined.includes('简历池')) return { key: 'p04_pool', name: '平台简历池调度', raw: mod };
+      if (combined.includes('p-06') || combined.includes('资金池')) return { key: 'p06_funds', name: '资金总览与审核', raw: mod };
+      if (combined.includes('p-01') || combined.includes('p-02') || combined.includes('企业管理')) return { key: 'p01_ent', name: '客户与企业管理', raw: mod };
+      if (mod) return { key: mod.toLowerCase().replace(/[^a-z0-9]/g, '_'), name: mod, raw: mod };
+      return { key: 'general', name: '常规视图', raw: '' };
+    }
+
+    // 三态生命周期判定: (a) 带缺陷的问题 (b) 待上线的问题 (c) 本地上线/已上线的问题
+    function getRecordLifecycle(r) {
+      if (!r) return 'defect';
+      if (r.status === 'pending') return 'defect'; // (a) 带缺陷的问题
+      if (r.status === 'resolved') {
+        const notes = (r.resolution && r.resolution.notes) ? r.resolution.notes : '';
+        const isDeployed = r.isDeployed === true || notes.includes('已推线上') || (r.origin === 'online' && !notes.includes('未推线上'));
+        if (isDeployed) {
+          return 'deployed'; // (c) 本地上线/已上线的问题
+        } else {
+          return 'pending_deploy'; // (b) 待上线的问题 (本地已结案·未推线上)
+        }
+      }
+      return 'defect';
+    }
+
+    // 设置端排序方向 ('asc': 由小到大 | 'desc': 由大到小)
+    window.setTerminalSort = function(order) {
+      terminalSortOrder = order;
+      const btnAsc = document.getElementById('btn-sort-asc');
+      const btnDesc = document.getElementById('btn-sort-desc');
+      if (btnAsc) btnAsc.classList.toggle('active', order === 'asc');
+      if (btnDesc) btnDesc.classList.toggle('active', order === 'desc');
+      const sortText = document.getElementById('tcc-sort-desc-text');
+      if (sortText) sortText.innerText = order === 'asc' ? '由小到大 ⬆️' : '由大到小 ⬇️';
+      renderTerminalCommandCenter();
+    };
+
+    // 选中端 (一级中枢下钻)
+    window.selectTerminal = function(termKey) {
+      selectedTerminalKey = termKey;
+      selectedModuleKey = 'all'; // 切换端时重置模块为全部
+      renderTerminalCommandCenter();
+      renderCards();
+    };
+
+    // 选中模块 (二级模块穿透)
+    window.selectModule = function(modKey) {
+      selectedModuleKey = modKey;
+      renderTerminalCommandCenter();
+      renderCards();
+    };
+
+    // 切换生命周期三态过滤 (带缺陷 / 待上线 / 本地上线)
+    window.selectLifecycle = function(lc) {
+      selectedLifecycle = lc;
+      document.querySelectorAll('#group-lifecycle .cascade-pill').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-lc') === lc);
+      });
+      renderCards();
+    };
+
+    // 切换问题类型过滤 (缺陷 / 业务 / 文案 / 设计)
+    window.selectFilterType = function(type) {
+      currentFilter.type = type;
+      document.querySelectorAll('#group-type .cascade-pill').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-type') === type);
+      });
+      renderCards();
+    };
+
+    // 切换工单闭环状态过滤 (全部 / 待解决 / 已完成 / 回收站)
+    window.selectFilterStatus = function(status) {
+      currentFilter.status = status;
+      document.querySelectorAll('#group-status .cascade-pill').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-status') === status);
+      });
+      renderCards();
+    };
+
+    // 切换数据归属环境过滤 (全部 / 线上 / 本地)
+    window.selectFilterOrigin = function(origin) {
+      currentFilter.origin = origin;
+      document.querySelectorAll('#group-origin .cascade-pill').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-origin') === origin);
+      });
+      renderCards();
+    };
+
+    // 搜索输入过滤
+    window.onSearchInput = function(val) {
+      currentFilter.search = (val || '').trim();
+      renderCards();
+    };
+
+    // 重置所有筛选条件
+    window.resetAllFilters = function() {
+      selectedTerminalKey = 'all';
+      selectedModuleKey = 'all';
+      selectedLifecycle = 'all';
+      currentFilter = {
+        status: 'all',
+        origin: 'all',
+        type: 'all',
+        severity: 'all',
+        terminal: 'all',
+        hasSnapshot: false,
+        search: ''
+      };
+      const si = document.getElementById('search-input');
+      if (si) si.value = '';
+
+      // 同步所有胶囊高亮状态
+      document.querySelectorAll('#group-lifecycle .cascade-pill').forEach(b => b.classList.toggle('active', b.getAttribute('data-lc') === 'all'));
+      document.querySelectorAll('#group-type .cascade-pill').forEach(b => b.classList.toggle('active', b.getAttribute('data-type') === 'all'));
+      document.querySelectorAll('#group-status .cascade-pill').forEach(b => b.classList.toggle('active', b.getAttribute('data-status') === 'all'));
+      document.querySelectorAll('#group-origin .cascade-pill').forEach(b => b.classList.toggle('active', b.getAttribute('data-origin') === 'all'));
+
+      renderTerminalCommandCenter();
+      renderCards();
+      showToast('✓ 已重置全部筛选条件，恢复全景总览', 1800);
+    };
+
+    // 渲染置顶的五端决策中枢与二级细分分布 (全部数量动态联动)
+    function renderTerminalCommandCenter() {
+      const activeRecords = allRecords.filter(r => !r.isTrash && r.status !== 'trash');
+      
+      // 1. 全局三态统计
+      let totalAll = activeRecords.length;
+      let totalDefect = 0;
+      let totalPendingDeploy = 0;
+      let totalDeployed = 0;
+
+      // 2. 五端统计容器
+      const termMap = new Map();
+      CANONICAL_TERMINALS.forEach(t => {
+        termMap.set(t.key, {
+          meta: t,
+          total: 0,
+          defect: 0,
+          pending_deploy: 0,
+          deployed: 0,
+          modules: new Map()
+        });
+      });
+
+      activeRecords.forEach(r => {
+        const term = getRecordTerminal(r);
+        const mod = getRecordModule(r);
+        const lc = getRecordLifecycle(r);
+
+        if (lc === 'defect') totalDefect++;
+        else if (lc === 'pending_deploy') totalPendingDeploy++;
+        else totalDeployed++;
+
+        const entry = termMap.get(term.key);
+        if (entry) {
+          entry.total++;
+          if (lc === 'defect') entry.defect++;
+          else if (lc === 'pending_deploy') entry.pending_deploy++;
+          else entry.deployed++;
+
+          let mEntry = entry.modules.get(mod.name);
+          if (!mEntry) {
+            mEntry = { key: mod.key, name: mod.name, total: 0, defect: 0, pending_deploy: 0, deployed: 0 };
+            entry.modules.set(mod.name, mEntry);
+          }
+          mEntry.total++;
+          if (lc === 'defect') mEntry.defect++;
+          else if (lc === 'pending_deploy') mEntry.pending_deploy++;
+          else mEntry.deployed++;
+        }
+      });
+
+      // 3. 排序端 (由小到大 或 由大到小，按待解决缺陷数 defect)
+      const termList = Array.from(termMap.values());
+      termList.sort((a, b) => {
+        if (terminalSortOrder === 'asc') {
+          return a.defect - b.defect || a.total - b.total;
+        } else {
+          return b.defect - a.defect || b.total - a.total;
+        }
+      });
+
+      // 4. 渲染全部端卡片 + 5端卡片
+      const cardsContainer = document.getElementById('terminal-cards-container');
+      if (cardsContainer) {
+        let allCardHtml = `
+          <div class="terminal-card ${selectedTerminalKey === 'all' ? 'active' : ''}" onclick="selectTerminal('all')">
+            <div class="tc-top">
+              <span class="tc-name-wrap"><span style="font-size:15px;">🌐</span> 全部端</span>
+              <span class="tc-pending-pill ${totalDefect > 0 ? 'pill-has-pending' : 'pill-zero'}">
+                ${totalDefect > 0 ? `待处理: ${totalDefect}` : '🟢 已全清零'}
+              </span>
+            </div>
+            <div class="tc-metrics-row">
+              <div class="tc-metric-item" title="带缺陷未解决的问题">
+                <span class="tc-metric-label">🔴 缺陷</span>
+                <span class="tc-metric-val tc-val-defect">${totalDefect}</span>
+              </div>
+              <div class="tc-metric-item" title="本地已解决待推上线的问题">
+                <span class="tc-metric-label">🟡 待上线</span>
+                <span class="tc-metric-val tc-val-pending-deploy">${totalPendingDeploy}</span>
+              </div>
+              <div class="tc-metric-item" title="本地已上线或线上已解决的问题">
+                <span class="tc-metric-label">🟢 已上线</span>
+                <span class="tc-metric-val tc-val-deployed">${totalDeployed}</span>
+              </div>
+            </div>
+          </div>
+        `;
+
+        let termsHtml = termList.map(item => {
+          const isAct = selectedTerminalKey === item.meta.key;
+          const pendingCount = item.defect;
+          return `
+            <div class="terminal-card ${isAct ? 'active' : ''}" onclick="selectTerminal('${item.meta.key}')" title="点击过滤 ${item.meta.name}">
+              <div class="tc-top">
+                <span class="tc-name-wrap" title="${item.meta.name}">
+                  <span style="font-size:15px;">${item.meta.icon}</span> ${item.meta.name}
+                </span>
+                <span class="tc-pending-pill ${pendingCount > 0 ? 'pill-has-pending' : 'pill-zero'}">
+                  ${pendingCount > 0 ? `待处理: ${pendingCount}` : '🟢 全部结案'}
+                </span>
+              </div>
+              <div class="tc-metrics-row">
+                <div class="tc-metric-item" title="带缺陷未解决">
+                  <span class="tc-metric-label">🔴 缺陷</span>
+                  <span class="tc-metric-val tc-val-defect">${item.defect}</span>
+                </div>
+                <div class="tc-metric-item" title="本地已结案·待推线上">
+                  <span class="tc-metric-label">🟡 待上线</span>
+                  <span class="tc-metric-val tc-val-pending-deploy">${item.pending_deploy}</span>
+                </div>
+                <div class="tc-metric-item" title="本地已上线/已结案">
+                  <span class="tc-metric-label">🟢 已上线</span>
+                  <span class="tc-metric-val tc-val-deployed">${item.deployed}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        cardsContainer.innerHTML = allCardHtml + termsHtml;
+      }
+
+      // 5. 渲染模块二级分布条 (联动当前选中的端，按缺陷数由小到大排序)
+      const moduleContainer = document.getElementById('module-bar-container');
+      if (moduleContainer) {
+        let modulesToRender = [];
+        if (selectedTerminalKey === 'all') {
+          const aggMods = new Map();
+          termList.forEach(t => {
+            t.modules.forEach(m => {
+              let existing = aggMods.get(m.name);
+              if (!existing) {
+                existing = { key: m.key, name: m.name, total: 0, defect: 0, pending_deploy: 0, deployed: 0 };
+                aggMods.set(m.name, existing);
+              }
+              existing.total += m.total;
+              existing.defect += m.defect;
+              existing.pending_deploy += m.pending_deploy;
+              existing.deployed += m.deployed;
+            });
+          });
+          modulesToRender = Array.from(aggMods.values());
+        } else {
+          const currentTerm = termMap.get(selectedTerminalKey);
+          if (currentTerm) {
+            modulesToRender = Array.from(currentTerm.modules.values());
           }
         }
+
+        modulesToRender.sort((a, b) => {
+          if (terminalSortOrder === 'asc') {
+            return a.defect - b.defect || a.total - b.total;
+          } else {
+            return b.defect - a.defect || b.total - a.total;
+          }
+        });
+
+        const activeTotalInScope = selectedTerminalKey === 'all' ? totalAll : (termMap.get(selectedTerminalKey)?.total || 0);
+
+        let modHtml = `
+          <button class="module-pill ${selectedModuleKey === 'all' ? 'active' : ''}" onclick="selectModule('all')">
+            全部模块 <span class="module-pill-badge">${activeTotalInScope}</span>
+          </button>
+        `;
+
+        modHtml += modulesToRender.map(m => {
+          const isAct = selectedModuleKey === m.name;
+          return `
+            <button class="module-pill ${isAct ? 'active' : ''}" onclick="selectModule('${escapeHtml(m.name)}')" title="模块: ${escapeHtml(m.name)} (待处理缺陷: ${m.defect} | 待上线: ${m.pending_deploy} | 已上线: ${m.deployed})">
+              ${escapeHtml(m.name)}
+              <span class="module-pill-badge" style="${m.defect > 0 ? 'color:#fca5a5;' : 'color:#6ee7b7;'}">
+                🔴${m.defect} | 🟢${m.deployed + m.pending_deploy}
+              </span>
+            </button>
+          `;
+        }).join('');
+
+        moduleContainer.innerHTML = modHtml;
+      }
+
+      // 6. 联动更新所有下级细分筛选上的动态数量徽章
+      renderFilterCounts();
+    }
+
+    function isBusinessFeedback(record) {
+      if (!record || record.id === 'FB-1787973004756') return false;
+      if (typeof record.id === 'string' && record.id.startsWith('FB-178792')) return false;
+      return true;
+    }
+    let currentFilter = {
+      status: 'all',
+      origin: 'all',
+      type: 'all',
+      severity: 'all',
+      terminal: 'all',
+      hasSnapshot: false,
+      search: ''
+    };
+    
+    const LOCAL_STORAGE_KEYS = [
+      'zhengjie_hrm_feedback_logs_v1',
+      'zhengjie_feedback_records_v1',
+      'zhengjie_feedback_records',
+      'zj_feedback_records'
+    ];
+    const ENGINEER_DRAFT_STORAGE_PREFIX = 'zhengjie_hrm_engineer_note_draft_v1:';
+
+    function getEngineerDraft(id) {
+      try {
+        const value = localStorage.getItem(ENGINEER_DRAFT_STORAGE_PREFIX + id);
+        return value === null ? null : value;
       } catch (e) {
-        console.warn('拉取数据失败:', e.message);
+        return null;
       }
     }
 
-    async function fetchMappings() {
-      const apiBase = getApiBase();
+    function saveEngineerDraft(id, value) {
       try {
-        const res = await fetch(`${apiBase}/api/mappings/list`, { mode: 'cors' });
-        const json = await res.json();
-        if (json && json.success) {
-          allMappings = json.mappings || [];
-          document.getElementById('kpiMappings').innerText = allMappings.length;
-          document.getElementById('badgeMappingsCount').innerText = allMappings.length;
-        }
+        localStorage.setItem(ENGINEER_DRAFT_STORAGE_PREFIX + id, value);
       } catch (e) {}
     }
 
-    function updateKPIs() {
-      const active = allFeedbacks.filter(r => !r.isTrash && r.status !== 'trash');
-      const pending = active.filter(r => (r.status || 'pending') === 'pending');
-      const resolved = active.filter(r => (r.status || '') === 'resolved');
-
-      document.getElementById('kpiTotal').innerText = active.length;
-      document.getElementById('kpiPending').innerText = pending.length;
-      document.getElementById('kpiResolved').innerText = resolved.length;
-      document.getElementById('kpiTrash').innerText = trashBin.length;
-
-      document.getElementById('badgeActiveCount').innerText = active.length;
-      document.getElementById('badgeTrashCount').innerText = trashBin.length;
+    function clearEngineerDraft(id) {
+      try {
+        localStorage.removeItem(ENGINEER_DRAFT_STORAGE_PREFIX + id);
+      } catch (e) {}
     }
 
-    // =========================================================================
-    // 🎨 内容渲染引擎
-    // =========================================================================
-    function renderCurrentTab() {
-      const container = document.getElementById('feedbacksContainer');
-      container.innerHTML = '';
+    // HTML 安全转义 (防 DOM 注入与标签截断破坏)
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
 
-      if (currentTab === 'active') {
-        renderActiveFeedbacks();
-      } else if (currentTab === 'mappings') {
-        renderMappingsTab();
-      } else if (currentTab === 'trash') {
-        renderTrashTab();
+    // 精确时间格式化（标准化 YYYY-MM-DD HH:mm:ss，带秒级精度与零填充）
+    function formatExactTime(r) {
+      if (!r) return '-';
+      let d = null;
+      if (r.timestamp && !isNaN(new Date(r.timestamp).getTime())) {
+        d = new Date(r.timestamp);
+      }
+      if (!d && r.id && typeof r.id === 'string' && r.id.startsWith('FB-')) {
+        const ts = parseInt(r.id.replace('FB-', ''), 10);
+        if (!isNaN(ts) && ts > 1700000000000) {
+          d = new Date(ts);
+        }
+      }
+      if (!d && r.time) {
+        const parsed = new Date(r.time);
+        if (!isNaN(parsed.getTime())) d = parsed;
+      }
+      if (!d && r.submitTime) {
+        const parsed = new Date(r.submitTime);
+        if (!isNaN(parsed.getTime())) d = parsed;
+      }
+
+      if (d && !isNaN(d.getTime())) {
+        const Y = d.getFullYear();
+        const M = String(d.getMonth() + 1).padStart(2, '0');
+        const D = String(d.getDate()).padStart(2, '0');
+        const h = String(d.getHours()).padStart(2, '0');
+        const m = String(d.getMinutes()).padStart(2, '0');
+        const s = String(d.getSeconds()).padStart(2, '0');
+        return `${Y}-${M}-${D} ${h}:${m}:${s}`;
+      }
+      return r.time || r.submitTime || '-';
+    }
+
+    // 格式化相对时间
+    function formatTime(timeStr) {
+      if (!timeStr) return '-';
+      return timeStr;
+    }
+
+    // 弹出 Toast
+    function showToast(msg, duration = 2800) {
+      const t = document.getElementById('toast');
+      if (!t) return;
+      t.innerText = msg;
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, duration);
+    }
+
+    // 稳健剪贴板复制工具 (兼容 HTTPS / HTTP / 各种内核及移动端/iframe)
+    async function safeCopyToClipboard(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch (e) {
+          console.warn('navigator.clipboard.writeText failed, fallbacking...', e);
+        }
+      }
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.top = '-9999px';
+        ta.style.left = '-9999px';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        const success = document.execCommand('copy');
+        document.body.removeChild(ta);
+        if (success) return true;
+      } catch (err) {
+        console.warn('execCommand copy fallback failed:', err);
+      }
+      try {
+        window.prompt('请按 Ctrl+C / Cmd+C 复制以下 AI 修复指令：', text);
+        return true;
+      } catch(e) {
+        return false;
       }
     }
 
-    function renderActiveFeedbacks() {
-      const container = document.getElementById('feedbacksContainer');
-      const filtered = getFilteredFeedbacks();
+    function getFeedbackLocation(r) {
+      const exactUrl = r && (r.url || r.pageRoute) ? (r.url || r.pageRoute) : '未记录完整 URL';
+      const route = r && r.pageRoute ? r.pageRoute : (r && r.pagePath ? r.pagePath : '未记录路由');
+      const moduleId = r && r.activeModule ? r.activeModule : '默认主视图';
+      const moduleLabel = r && r.activeModuleLabel ? r.activeModuleLabel : moduleId;
+      const selector = r && r.activeModuleSelector ? r.activeModuleSelector : '未记录 DOM 选择器';
+      return { exactUrl, route, moduleId, moduleLabel, selector };
+    }
 
-      if (filtered.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state">
-            <i class="fa-solid fa-circle-check"></i>
-            <p>太棒了！当前没有任何匹配的待处理工单</p>
-          </div>
-        `;
+    // 生成针对当前反馈的完整 AI 修复 Prompt (包含四大要素 + 工程师指导意见)
+        function getFeedbackOrigin(r) {
+      if (!r) return { isOnline: false, isLocal: true, label: '💻 本地数据', env: 'local', desc: '源自本地开发测试环境' };
+      if (r.origin === 'online' || r.dataSource === 'online') {
+        return {
+          isOnline: true,
+          isLocal: false,
+          label: '🌐 线上数据',
+          desc: '源自生产/测试服务器同步 (http://43.139.67.247:23333)',
+          env: 'online',
+          remoteServerUrl: r.remoteServerUrl || 'http://43.139.67.247:23333'
+        };
+      }
+      if (r.origin === 'local' || r.dataSource === 'local') {
+        return {
+          isOnline: false,
+          isLocal: true,
+          label: '💻 本地数据',
+          desc: '源自本地开发测试工作区 (127.0.0.1 / file://)',
+          env: 'local'
+        };
+      }
+      const url = (r.url || '').toLowerCase();
+      const source = (r.source || '').toLowerCase();
+      const remoteImg = (r.remoteImageUrl || '').toLowerCase();
+
+      const isRemote = url.includes('43.139.67.247') || source.includes('43.139.67.247') || remoteImg.includes('43.139.67.247');
+      const isLocal = url.includes('127.0.0.1') || url.includes('localhost') || url.startsWith('file:') || source.includes('127.0.0.1') || source.includes('localhost') || source.startsWith('file:');
+
+      if (isRemote && !isLocal) {
+        return {
+          isOnline: true,
+          isLocal: false,
+          label: '🌐 线上数据',
+          desc: '源自生产/测试服务器同步 (http://43.139.67.247:23333)',
+          env: 'online',
+          remoteServerUrl: 'http://43.139.67.247:23333'
+        };
+      }
+
+      return {
+        isOnline: false,
+        isLocal: true,
+        label: '💻 本地数据',
+        desc: '源自本地开发测试工作区 (127.0.0.1 / file://)',
+        env: 'local'
+      };
+    }
+
+    function buildAgentFixPrompt(r) {
+      if (!r) return '';
+
+      const location = getFeedbackLocation(r);
+
+      const opLogsText = (r.operationLogs && r.operationLogs.length > 0)
+        ? r.operationLogs.map(l => `[${l.time}] [${l.type}] ${l.summary}`).join('\n')
+        : '';
+
+      const sysLogsText = (r.systemLogs && r.systemLogs.length > 0)
+        ? r.systemLogs.map(l => `[${l.time}] [${l.level}] ${l.msg}`).join('\n')
+        : '';
+
+      const descText = String(r.description || '无详细描述').split('\n').join('\n> ');
+
+      const currentOrigin = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : 'http://43.139.67.247:23333';
+      const remoteImgUrl = `${currentOrigin}/data/snapshots/${r.id}.png`;
+
+      const snapLine = (r.snapshotPath || r.snapshotUrl)
+        ? `【1. 真实页面物理快照】: \`data/snapshots/${r.id}.png\`\n【线上快照网络直链】: \`${remoteImgUrl}\`\n(排障指引：可直接使用 view_image 工具读取本地图片路径进行视觉分析；若本地尚未下载，MCP 工具 get_feedback 会自动拉取)\n`
+        : '';
+
+      const opSection = opLogsText
+        ? `【2. 用户真实操作日志轨迹 (${r.operationLogs.length}步)】:\n\`\`\`text\n${opLogsText}\n\`\`\`\n`
+        : '';
+
+      const sysSection = sysLogsText
+        ? `【3. 系统诊断与控制台日志 (${r.systemLogs.length}条)】:\n\`\`\`text\n${sysLogsText}\n\`\`\`\n`
+        : '';
+
+      // 🌟 工程师指导方案 (最高优先级要求)
+      let engineerSection = '';
+      if (r.engineerNote && r.engineerNote.content && r.engineerNote.content.trim()) {
+        const enText = r.engineerNote.content.trim().split('\n').join('\n> ');
+        engineerSection = `=======================================================
+【⚠️ 最高优先级 · 工程师/架构师指定修复方案与指导意见】:
+> **指导人**: ${r.engineerNote.author || '工程师'} (更新于 ${r.engineerNote.updatedAt || '刚刚'})
+> 
+> ${enText}
+
+🚨 **核心执行原则**:
+- Agent 必须以【工程师指导意见】为主导进行代码修复！
+- 如有与工程师方案冲突的理解，严格以工程师意见为准实施。
+=======================================================
+`;
+      }
+
+      const originInfo = getFeedbackOrigin(r);
+      const originSection = originInfo.isOnline ? `【数据来源与归属环境】: 🌐 线上云端同步数据 (Online Remote: http://43.139.67.247:23333)
+【数据血缘说明】: 本工单源自线上用户/测试人员在公网环境提交，已增量同步至本地数据库。
+
+【数据同步与闭环策略 (Sync Policy)】:
+⚠️ **【线上数据同步与本地修改原则】**:
+1. 【同步至本地】：服务器上的反馈问题已同步到本地数据库，后续所有状态管理与排障在本地执行；
+2. 【本地代码修改】：所有缺陷修复一律优先且仅在本地工作区完成代码修改与自测；
+3. 【不自动上传服务器】：验证通过后在本地标记解决，严格禁止自动推送到线上服务器，禁止自动发版！` : `【数据来源与归属环境】: 💻 本地自测数据 (Local Workstation: 127.0.0.1 / file://)
+【数据血缘说明】: 本工单源自本地开发调试或自动化测试过程中生成。
+
+【数据同步与闭环策略 (Sync Policy)】:
+ℹ️ **【本地数据闭环要求】**:
+1. 【不传服务器】：本地启动的服务和反馈的问题，不用传到服务器；
+2. 【本地闭环】：直接在本地数据库标记已解决（sync_to_remote: false），完全本地自闭环。`;
+
+      return `请帮我针对正杰全球聘原型系统排查并修复以下用户反馈的缺陷：
+
+【缺陷编号】: \`${r.id}\`
+【优先级/严重度】: ${r.severity || 'P2'} (${r.typeLabel || '问题反馈'})
+【问题简述 / 标题】: ${r.title || '未命名缺陷'}
+${originSection}
+
+【精确复现定位（必须以此为准，不要只打开首页）】:
+- 页面文件: \`${r.pagePath || 'index.html'}\`
+- 页面完整路由: \`${location.route}\`
+- 提交时完整 URL: \`${location.exactUrl}\`
+- 页面名称: 《${r.pageTitle || '原型页面'}》
+- 当前模块: ${location.moduleLabel}（模块 ID: \`${location.moduleId}\`）
+- 可复现选择器: \`${location.selector}\`
+- 复现要求: 先打开“页面完整路由/提交时完整 URL”，再按“模块 ID/可复现选择器”进入截图所在模块；禁止只根据“哪个端”或文件名猜测页面。
+【反馈人员】: ${r.contact || '匿名测试人员'}
+【提交时间】: ${formatExactTime(r)}
+【客户端视口】: ${r.viewport || '未知'}
+
+【详细问题描述 / 改进建议】:
+> ${descText}
+
+${snapLine}${opSection}${sysSection}${engineerSection}=======================================================
+🚨【核心修复与验证铁律 (Local First & Zero Auto-Upload)】:
+修复过后，只允许在本地修复相应的问题，找到本地相应的路径去复现整个问题。可以去线上复现也行，但是整个修复和验证必须落实到本地，不自动上传到服务器，同步更新相应的功能。
+1. 【本地修复原则】：修复后只允许在本地工作区修复相应的问题，严禁直接在线上生产环境修改；
+2. 【本地路径复现】：必须找到本地相应的源码与页面路径去复现整个问题（允许前往线上环境复现作为参考对比，但整个排查、代码修复和测试验证必须100%落实到本地工作区）；
+3. 【禁止自动上传】：修复完成后，严禁自动上传或推送到服务器，禁止自动发版；同步更新相应功能必须仅在本地完成闭环验证。
+=======================================================
+【排障与修复闭环操作要求 (MCP Instructions)】:
+1. 先调用 MCP 工具 \`get_feedback(feedback_id="${r.id}")\` 获取当前反馈完整详情、工程师指导意见、数据源归属与物理图片路径；
+2. 若有快照，通过 \`view_image\` 仔细查看缺陷发生的实际视觉形态；
+3. 按照本地相应路径进行复现排查，并在本地工作区修改对应源码；
+4. 运行浏览器或自动化测试脚本进行本地修复验证（严禁修改线上代码）；
+5. 验证通过后，调用 MCP 工具 \`resolve_feedback\` 进行本地结案（注意：sync_to_remote 必须为 false，不自动上传到服务器）：
+   \`resolve_feedback(feedback_id="${r.id}", resolution_notes="[本地已验证·未推线上] 说明具体修复原因与验收结果", files_modified=["${r.pagePath || '...'}"], sync_to_remote=false, resolved_by="AI Agent")\`
+`;
+    }
+
+    // 复制针对当前反馈的 Agent 修复 Prompt
+    window.copyAgentFixPromptById = async function(id) {
+      const r = allRecords.find(item => item && item.id === id);
+      if (!r) {
+        showToast('⚠️ 未找到对应的反馈记录: ' + id);
         return;
       }
+      const prompt = buildAgentFixPrompt(r);
+      const ok = await safeCopyToClipboard(prompt);
+      if (ok) {
+        showToast(`🎉 已成功复制【${r.id}】专属 AI 修复 Prompt！(已打包工程师指导意见与全部四大要素)`);
+      } else {
+        showToast('⚠️ 复制遇到限制，请重试');
+      }
+    };
 
-      filtered.forEach(item => {
-        const card = document.createElement('div');
-        card.className = `fb-card ${item.status || 'pending'} ${(item.severity || 'p2').toLowerCase()}`;
-
-        const remoteUrl = item.url || item.pageUrl || '未知URL';
-        const localPath = item.localPath || '自动计算中...';
-
-        card.innerHTML = `
-          <div class="card-head">
-            <div class="card-title">${item.title || '无标题工单'}</div>
-            <div class="tag-group">
-              <span class="tag ${(item.severity || 'p2').toLowerCase()}">${item.severity || 'P2'}</span>
-              <span class="tag status-${item.status || 'pending'}">${item.status === 'resolved' ? '已解决' : '待解决'}</span>
-            </div>
-          </div>
-
-          <div class="card-desc">${item.description || '无详细描述'}</div>
-
-          <!-- 智能位置映射定位卡 -->
-          <div class="location-box">
-            <div class="loc-row">
-              <span class="loc-label"><i class="fa-solid fa-globe"></i> 远程:</span>
-              <span class="loc-val" title="${remoteUrl}">${remoteUrl}</span>
-            </div>
-            <div class="loc-row">
-              <span class="loc-label"><i class="fa-solid fa-folder-open"></i> 本地:</span>
-              <span class="loc-val" title="点击复制本地源码路径" onclick="copyText('${localPath}')">${localPath}</span>
-            </div>
-          </div>
-
-          ${item.engineerNote ? `
-            <div style="background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(129, 140, 248, 0.3); border-radius: 6px; padding: 6px 10px; font-size: 11px; color: #c7d2fe;">
-              <strong>👨‍💻 工程师指导:</strong> ${item.engineerNote}
-            </div>
-          ` : ''}
-
-          <div class="card-meta">
-            <span><i class="fa-regular fa-clock"></i> ${new Date(item.time || item.createdAt || Date.now()).toLocaleString()}</span>
-            <span><i class="fa-regular fa-user"></i> ${item.contact || '匿名用户'}</span>
-          </div>
-
-          <div class="card-actions">
-            <button class="btn-card" onclick="copyAiFixPrompt('${item.id}')">
-              <i class="fa-solid fa-robot"></i> 复制 AI 修复 Prompt
-            </button>
-            ${item.status !== 'resolved' ? `
-              <button class="btn-card success" onclick="markResolved('${item.id}')">
-                <i class="fa-solid fa-check"></i> 结案
-              </button>
-            ` : ''}
-            <button class="btn-card danger" onclick="moveToTrash('${item.id}')" title="软删除移入垃圾箱">
-              <i class="fa-solid fa-trash"></i>
-            </button>
-          </div>
-        `;
-        container.appendChild(card);
-      });
+        // 统一 API 基础地址（支持 file:// 协议与 http 协议自适应）
+    function getApiBaseUrl() {
+      return window.location.protocol === 'file:' ? 'http://127.0.0.1:8888' : '';
     }
 
-    function renderTrashTab() {
-      const container = document.getElementById('feedbacksContainer');
-      if (trashBin.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state">
-            <i class="fa-solid fa-trash-can-arrow-up"></i>
-            <p>垃圾箱空空如也，无废弃工单</p>
-          </div>
-        `;
-        return;
+    // 保存工程师指导意见
+    window.saveEngineerNote = async function(id) {
+      const textarea = document.getElementById(`eng-note-${id}`);
+      if (!textarea) return;
+      const note = textarea.value.trim();
+      const button = textarea.closest('.engineer-workspace-card')?.querySelector('button');
+      const originalButtonText = button ? button.innerHTML : '';
+      if (button) {
+        button.disabled = true;
+        button.innerHTML = '⏳ 正在写入服务器...';
       }
 
-      trashBin.forEach(item => {
-        const card = document.createElement('div');
-        card.className = 'fb-card status-trash';
-        card.innerHTML = `
-          <div class="card-head">
-            <div class="card-title">${item.title || '无标题'}</div>
-            <span class="tag status-trash">已移入垃圾箱</span>
-          </div>
-          <div class="card-desc">工单编号: ${item.feedbackId} · 原因: ${item.deleteReason || '用户移入'}</div>
-          <div class="card-meta">
-            <span>移入时间: ${new Date(item.deletedAt || Date.now()).toLocaleString()}</span>
-          </div>
-          <div class="card-actions">
-            <button class="btn-card success" onclick="restoreFromTrash('${item.feedbackId}')">
-              <i class="fa-solid fa-rotate-left"></i> 一键恢复
-            </button>
-            <button class="btn-card danger" onclick="purgePermanently('${item.feedbackId}')">
-              <i class="fa-solid fa-skull"></i> 彻底销毁
-            </button>
-          </div>
-        `;
-        container.appendChild(card);
+      try {
+        const baseUrl = getApiBaseUrl();
+      const res = await fetch(baseUrl + '/api/feedback/engineer-note', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            feedback_id: id,
+            engineer_note: note,
+            engineer_author: '工程师'
+          })
+        });
+        const data = await res.json();
+        if (data && data.success && data.persisted === true) {
+          clearEngineerDraft(id);
+          showToast(`✓ 已成功保存【${id}】工程师指导方案！AI Prompt 已实时同步更新！`, 3000);
+          const r = allRecords.find(item => item && item.id === id);
+          if (r) {
+            r.engineerNote = data.engineerNote || { content: note, author: '工程师', updatedAt: new Date().toLocaleString() };
+            // 更新当前卡片内的 Prompt 预览区域
+            const previewEl = document.getElementById(`prompt-preview-${id}`);
+            if (previewEl) {
+              previewEl.innerText = buildAgentFixPrompt(r);
+            }
+            const statusEl = document.getElementById(`eng-status-${id}`);
+            if (statusEl) {
+              statusEl.innerText = `已保存 (${r.engineerNote.updatedAt || '刚刚'})`;
+              statusEl.style.color = '#34d399';
+            }
+          }
+        } else {
+          alert('保存失败: ' + (data.error || '未知错误'));
+        }
+      } catch(e) {
+        alert('网络请求失败: ' + e.message);
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.innerHTML = originalButtonText || '💾 保存指导方案';
+        }
+      }
+    };
+
+
+    // 切换展开/收起完整操作日志
+    
+    // 切换折叠/展开辅助操作日志抽屉
+    window.toggleLogsBox = function(id) {
+      const box = document.getElementById(`logs-box-${id}`);
+      const txt = document.getElementById(`logs-toggle-text-${id}`);
+      const arr = document.getElementById(`logs-arrow-${id}`);
+      if (!box) return;
+      if (box.style.display === 'none' || box.style.display === '') {
+        box.style.display = 'block';
+        if (txt) txt.innerText = '收起时序详情';
+        if (arr) arr.innerText = '▲';
+      } else {
+        box.style.display = 'none';
+        if (txt) txt.innerText = '展开时序详情';
+        if (arr) arr.innerText = '▼';
+      }
+    };
+
+    window.toggleFullLogs = function(id) {
+      const fullEl = document.getElementById(`full-logs-${id}`);
+      if (!fullEl) return;
+      if (fullEl.style.display === 'block') {
+        fullEl.style.display = 'none';
+      } else {
+        fullEl.style.display = 'block';
+      }
+    };
+
+    // 切换 Prompt 预览折叠
+    window.togglePromptPreview = function(id) {
+      const el = document.getElementById(`prompt-preview-${id}`);
+      const arrow = document.getElementById(`prompt-arrow-${id}`);
+      if (!el) return;
+      if (el.style.display === 'block') {
+        el.style.display = 'none';
+        if (arrow) arrow.innerText = '▼';
+      } else {
+        el.style.display = 'block';
+        if (arrow) arrow.innerText = '▲';
+      }
+    };
+
+    let currentDashboardMode = (window.location.hostname.includes('43.139.67.247') || !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) ? 'online' : 'online';
+    let autoRefreshActive = true;
+    let autoRefreshTimer = null;
+    let currentDataVersion = 0;
+    let showTrashOnly = false;
+
+    function setDashboardMode(mode) {
+      currentDashboardMode = mode;
+      const btnOnline = document.getElementById('btn-mode-online');
+      const btnLocal = document.getElementById('btn-mode-local');
+      if (btnOnline && btnLocal) {
+        if (mode === 'online') {
+          btnOnline.style.background = 'linear-gradient(135deg,#0284c7,#0369a1)';
+          btnOnline.style.color = '#fff';
+          btnLocal.style.background = 'transparent';
+          btnLocal.style.color = '#94a3b8';
+        } else {
+          btnLocal.style.background = 'linear-gradient(135deg,#7c3aed,#6d28d9)';
+          btnLocal.style.color = '#fff';
+          btnOnline.style.background = 'transparent';
+          btnOnline.style.color = '#94a3b8';
+        }
+      }
+      showToast(`已切换至: ${mode === 'online' ? '🌐 线上模式 (直连云端服务器)' : '💻 线下模式 (本地离线数据库)'}`);
+      currentDataVersion = 0;
+      loadFeedbackData(true);
+    }
+
+    function toggleAutoRefresh() {
+      autoRefreshActive = !autoRefreshActive;
+      const dot = document.getElementById('live-dot');
+      const txt = document.getElementById('txt-autorefresh');
+      if (dot && txt) {
+        if (autoRefreshActive) {
+          dot.style.display = 'inline-block';
+          txt.innerText = '热刷新: 开 (2s)';
+          showToast('已开启动态无感热刷新');
+        } else {
+          dot.style.display = 'none';
+          txt.innerText = '热刷新: 已暂停';
+          showToast('已暂停自动热刷新');
+        }
+      }
+    }
+
+    function toggleTrashView() {
+      showTrashOnly = !showTrashOnly;
+      const btnTrash = document.getElementById('btn-view-trash');
+      if (btnTrash) {
+        btnTrash.classList.toggle('active', showTrashOnly);
+        btnTrash.style.background = showTrashOnly ? 'rgba(239,68,68,0.3)' : '';
+      }
+      showToast(showTrashOnly ? '已切换至: 🗑️ 软删除垃圾箱视图' : '已返回: 📋 活跃工单视图');
+      renderCards();
+    }
+
+    // 加载数据 (V3.1 双模式与数据底座适配)
+    async function loadFeedbackData(forceRender = false) {
+      try {
+        const isFile = window.location.protocol === 'file:';
+        const localApiUrl = isFile ? `http://127.0.0.1:8888/api/feedback/list?includeTrash=true&t=${Date.now()}` : `/api/feedback/list?includeTrash=true&t=${Date.now()}`;
+        const onlineApiUrl = `http://43.139.67.247:23333/api/feedback/list?includeTrash=true&t=${Date.now()}`;
+
+        let targetUrl = currentDashboardMode === 'online' ? onlineApiUrl : localApiUrl;
+
+        let resData = null;
+        try {
+          const res = await fetch(targetUrl, { mode: 'cors' });
+          if (res.ok) resData = await res.json();
+        } catch(err) {
+          if (currentDashboardMode === 'online') {
+            try {
+              const resLocal = await fetch(localApiUrl, { mode: 'cors' });
+              if (resLocal.ok) resData = await resLocal.json();
+            } catch(e) {}
+          }
+        }
+
+        if (resData && resData.dataVersion) {
+          if (!forceRender && resData.dataVersion === currentDataVersion && !showTrashOnly) {
+            return; // 版本无变动，跳过重绘
+          }
+          currentDataVersion = resData.dataVersion;
+        }
+
+        // 兼容单源与多源数据
+        let onlineRes = { status: 'rejected' };
+        let localRes = { status: 'fulfilled', value: resData };
+
+        const map = new Map();
+
+        // 1. 装载本地数据（打标 origin: 'local'，持久化保存在本地数据库）
+        if (localRes.status === 'fulfilled' && localRes.value && Array.isArray(localRes.value.data)) {
+          localRes.value.data.forEach(r => {
+            if (r && r.id) {
+              r.origin = 'local';
+              r.dataSource = 'local';
+              map.set(r.id, r);
+            }
+          });
+        }
+
+        // 2. 装载云端线上数据并自动同步到本地数据库（服务器上的反馈问题，一定要同步到本地，然后去修改它的状态）
+        if (onlineRes.status === 'fulfilled' && onlineRes.value && Array.isArray(onlineRes.value.data)) {
+          const unsyncedToLocal = [];
+          onlineRes.value.data.forEach(r => {
+            if (r && r.id) {
+              if (!map.has(r.id)) {
+                r.origin = 'online';
+                r.dataSource = 'online';
+                r.dataSourceLabel = '🌐 线上数据';
+                r.remoteServerUrl = 'http://43.139.67.247:23333';
+                map.set(r.id, r);
+                unsyncedToLocal.push(r);
+              } else {
+                // 🌟 本地状态优先！如果本地已存在该工单，严格保留本地的待解决/重开或修改状态，线上绝不反向覆盖本地状态！
+                const localItem = map.get(r.id);
+                if (!localItem.remoteServerUrl) localItem.remoteServerUrl = 'http://43.139.67.247:23333';
+                if (!localItem.remoteImageUrl) localItem.remoteImageUrl = `http://43.139.67.247:23333/data/snapshots/${r.id}.png`;
+              }
+            }
+          });
+
+          // 若发现线上有新增工单未在本地数据库落盘，自动增量同步保存至本地服务端
+          if (unsyncedToLocal.length > 0) {
+            const baseUrl = getApiBaseUrl();
+            fetch(baseUrl + '/api/feedback/save', {
+              method: 'POST',
+              mode: 'cors',
+              headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+              body: JSON.stringify({ records: unsyncedToLocal })
+            }).catch(() => {});
+          }
+        }
+
+        // 3. 本地浏览器 localStorage 补充暂存
+        try {
+          const localRaw = JSON.parse(localStorage.getItem('zhengjie_hrm_feedback_logs_v1') || '[]');
+          if (Array.isArray(localRaw)) {
+            localRaw.forEach(r => {
+              if (r && r.id && !map.has(r.id)) {
+                r.origin = 'local';
+                r.dataSource = 'local';
+                map.set(r.id, r);
+              }
+            });
+          }
+        } catch(e) {}
+
+        const rawList = Array.from(map.values());
+        const seenKeys = new Set();
+        const dedupedList = [];
+        for (const r of rawList) {
+          if (!r) continue;
+          const k = ((r.title || '') + ':::' + (r.description || '') + ':::' + (r.pagePath || '')).trim();
+          if (seenKeys.has(k)) continue;
+          seenKeys.add(k);
+          dedupedList.push(r);
+        }
+
+        allRecords = dedupedList.filter(isBusinessFeedback).sort((a, b) => {
+          const tA = new Date(a.time || 0).getTime() || (parseInt((a.id || '').replace('FB-', '')) || 0);
+          const tB = new Date(b.time || 0).getTime() || (parseInt((b.id || '').replace('FB-', '')) || 0);
+          return tB - tA;
+        });
+
+        serverRecordCount = allRecords.length;
+        const elLive = document.getElementById('live-real-count');
+        if (elLive) elLive.innerText = allRecords.length;
+        renderMetrics();
+        renderCards();
+      } catch(e) {
+        console.error('loadFeedbackData error:', e);
+        document.getElementById('cards-container').innerHTML = '<div class="empty-state" style="color:#ef4444;">无法连接反馈接口，请确认本地服务已启动 (bash scripts/start.sh)</div>';
+      }
+    }
+
+    // 渲染 KPI 指标与各筛选标签页动态数量徽标
+    function renderMetrics() {
+      const total = allRecords.length;
+      const pending = allRecords.filter(r => r.status !== 'resolved').length;
+      const resolved = allRecords.filter(r => r.status === 'resolved').length;
+      const highSev = allRecords.filter(r => (r.severity === 'P0' || r.severity === 'P1') && r.status !== 'resolved').length;
+      const snapshots = allRecords.filter(r => r.snapshotUrl || r.snapshotPath).length;
+
+      document.getElementById('val-total').innerText = total;
+      document.getElementById('val-pending').innerText = pending;
+      document.getElementById('val-resolved').innerText = resolved;
+      document.getElementById('val-high-sev').innerText = highSev;
+      document.getElementById('val-snaps').innerText = snapshots;
+
+      renderFilterCounts();
+      renderTerminalCommandCenter();
+    }
+
+    // 动态计算并更新所有下级细化拆分筛选按钮上的数量徽章 (严格按选中端联动)
+    function renderFilterCounts() {
+      // 🌟 核心联动机制：所有下级细化拆分统计，严格限定在当前选中的端内！
+      const scopedRecords = (selectedTerminalKey === 'all')
+        ? allRecords
+        : allRecords.filter(r => getRecordTerminal(r).key === selectedTerminalKey);
+
+      const activeRecords = scopedRecords.filter(r => !r.isTrash && r.status !== 'trash');
+      const trashRecords = scopedRecords.filter(r => r.isTrash || r.status === 'trash');
+      const total = activeRecords.length;
+      const pending = activeRecords.filter(r => r.status !== 'resolved').length;
+      const resolved = activeRecords.filter(r => r.status === 'resolved').length;
+      const trash = trashRecords.length;
+
+      const setBadge = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.innerText = val;
+      };
+
+      // 1. 上线实施三态阶段 (当前端下)
+      let lcDefect = 0, lcPendingDeploy = 0, lcDeployed = 0;
+      activeRecords.forEach(r => {
+        const lc = getRecordLifecycle(r);
+        if (lc === 'defect') lcDefect++;
+        else if (lc === 'pending_deploy') lcPendingDeploy++;
+        else lcDeployed++;
       });
+      setBadge('cnt-lc-all', total);
+      setBadge('cnt-lc-defect', lcDefect);
+      setBadge('cnt-lc-pending-deploy', lcPendingDeploy);
+      setBadge('cnt-lc-deployed', lcDeployed);
+
+      // 2. 问题业务类型 (当前端下：缺陷、业务、文案、设计)
+      let bugCnt = 0, flowCnt = 0, uxCnt = 0, designCnt = 0;
+      activeRecords.forEach(r => {
+        const t = (r.type || '').toLowerCase();
+        const tLabel = (r.typeLabel || '').toLowerCase();
+        if (t === 'bug' || tLabel.includes('bug') || tLabel.includes('缺陷')) bugCnt++;
+        else if (t === 'flow' || tLabel.includes('flow') || tLabel.includes('流程')) flowCnt++;
+        else if (t === 'ux' || tLabel.includes('ux') || tLabel.includes('交互') || tLabel.includes('文案')) uxCnt++;
+        else if (t === 'design' || t === 'ui' || tLabel.includes('design') || tLabel.includes('ui') || tLabel.includes('设计') || tLabel.includes('视觉')) designCnt++;
+        else bugCnt++;
+      });
+      setBadge('cnt-type-all', total);
+      setBadge('cnt-type-bug', bugCnt);
+      setBadge('cnt-type-flow', flowCnt);
+      setBadge('cnt-type-ux', uxCnt);
+      setBadge('cnt-type-design', designCnt);
+
+      // 3. 处理闭环状态 (当前端下)
+      setBadge('cnt-status-all', total);
+      setBadge('cnt-status-pending', pending);
+      setBadge('cnt-status-resolved', resolved);
+      setBadge('cnt-status-trash', trash);
+
+      // 4. 数据归属环境 (当前端下)
+      let onlineCnt = 0, localCnt = 0;
+      activeRecords.forEach(r => {
+        const o = getFeedbackOrigin(r);
+        if (o.isOnline) onlineCnt++;
+        else localCnt++;
+      });
+      setBadge('cnt-origin-all', total);
+      setBadge('cnt-origin-online', onlineCnt);
+      setBadge('cnt-origin-local', localCnt);
+
+      // 5. 更新透视作用域标题
+      const scopeEl = document.getElementById('scope-terminal-name');
+      if (scopeEl) {
+        if (selectedTerminalKey === 'all') {
+          scopeEl.innerHTML = `🌐 全部端 <span style="font-weight:400; color:#94a3b8; font-size:12px;">(全量 ${total} 条工单：🔴 ${pending} 待解决 · 🟢 ${resolved} 已上线/完成)</span>`;
+        } else {
+          const tObj = CANONICAL_TERMINALS.find(t => t.key === selectedTerminalKey);
+          const tName = tObj ? `${tObj.icon} ${tObj.name}` : selectedTerminalKey;
+          scopeEl.innerHTML = `${tName} <span style="font-weight:400; color:#94a3b8; font-size:12px;">(共 ${total} 条工单：🔴 ${pending} 待解决 · 🟢 ${resolved} 已上线/完成)</span>`;
+        }
+      }
     }
 
-    function renderMappingsTab() {
-      const container = document.getElementById('feedbacksContainer');
-      container.innerHTML = `
-        <div style="grid-column: 1 / -1; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px;">
-          <h3 style="font-size: 16px; margin-bottom: 12px;"><i class="fa-solid fa-map-location-dot"></i> 页面位置映射关系表 (URL ↔ 本地源码文件)</h3>
-          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">系统自动依据以下规则将远程公网访问 URL 自动转换为开发工作区中的实体源文件相对路径。</p>
-          
-          <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
-            <thead>
-              <tr style="border-bottom: 1px solid rgba(148, 163, 184, 0.2); color: var(--text-muted);">
-                <th style="padding: 10px;">规则ID</th>
-                <th style="padding: 10px;">端模块名称</th>
-                <th style="padding: 10px;">远程 URL 匹配模式</th>
-                <th style="padding: 10px;">本地源码相对路径</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${allMappings.map(m => `
-                <tr style="border-bottom: 1px solid rgba(148, 163, 184, 0.1);">
-                  <td style="padding: 10px; font-family: monospace; color: var(--text-sub);">${m.id}</td>
-                  <td style="padding: 10px; font-weight: 600;">${m.name}</td>
-                  <td style="padding: 10px; font-family: monospace; color: var(--accent);">${m.remotePattern}</td>
-                  <td style="padding: 10px; font-family: monospace; color: var(--primary);">${m.localFilePath}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      `;
-    }
-
-    function getFilteredFeedbacks() {
-      const kw = (document.getElementById('searchInput').value || '').toLowerCase();
-      const status = document.getElementById('filterStatus').value;
-      const severity = document.getElementById('filterSeverity').value;
-      const terminal = document.getElementById('filterTerminal').value;
-
-      return allFeedbacks.filter(item => {
-        if (item.isTrash || item.status === 'trash') return false;
-        if (status !== 'all' && (item.status || 'pending') !== status) return false;
-        if (severity !== 'all' && (item.severity || 'P2').toUpperCase() !== severity.toUpperCase()) return false;
-        if (terminal !== 'all') {
-          const path = (item.localPath || '').toLowerCase();
-          if (terminal === 'q' && !path.includes('q-wechat')) return false;
-          if (terminal === 'c' && !path.includes('c-wechat')) return false;
-          if (terminal === 'b-app' && !path.includes('b-wechat')) return false;
-          if (terminal === 'b-web' && !path.includes('b-web-admin')) return false;
-          if (terminal === 'op' && !path.includes('op-web')) return false;
+    // 过滤逻辑 (支持 状态、类型、严重级别、终端、快照、关键词 联合多维过滤)
+    function getFilteredRecords() {
+      return allRecords.filter(r => {
+        const isItemTrash = r.isTrash === true || r.status === 'trash';
+        // 状态过滤 (回收站 vs 活跃工单)
+        if (currentFilter.status === 'trash') {
+          if (!isItemTrash) return false;
+        } else {
+          if (isItemTrash) return false;
+          if (currentFilter.status === 'pending' && r.status === 'resolved') return false;
+          if (currentFilter.status === 'resolved' && r.status !== 'resolved') return false;
         }
-        if (kw) {
-          const matchTitle = (item.title || '').toLowerCase().includes(kw);
-          const matchDesc = (item.description || '').toLowerCase().includes(kw);
-          const matchPath = (item.localPath || '').toLowerCase().includes(kw);
-          const matchContact = (item.contact || '').toLowerCase().includes(kw);
-          if (!matchTitle && !matchDesc && !matchPath && !matchContact) return false;
+
+        // 🌟 1. 置顶端过滤 (Terminal Filter)
+        if (selectedTerminalKey !== 'all') {
+          const term = getRecordTerminal(r);
+          if (term.key !== selectedTerminalKey) return false;
         }
+
+        // 🌟 2. 模块过滤 (Module Filter)
+        if (selectedModuleKey !== 'all') {
+          const mod = getRecordModule(r);
+          if (mod.name !== selectedModuleKey && mod.raw !== selectedModuleKey && mod.key !== selectedModuleKey) return false;
+        }
+
+        // 🌟 3. 三态生命周期过滤 (Lifecycle Filter: (a) 带缺陷 (b) 待上线 (c) 本地上线)
+        if (selectedLifecycle !== 'all') {
+          const lc = getRecordLifecycle(r);
+          if (lc !== selectedLifecycle) return false;
+        }
+
+        // 来源过滤 (线上 vs 本地)
+        if (currentFilter.origin && currentFilter.origin !== 'all') {
+          const orig = getFeedbackOrigin(r);
+          if (currentFilter.origin === 'online' && !orig.isOnline) return false;
+          if (currentFilter.origin === 'local' && !orig.isLocal) return false;
+        }
+
+        // 严重度过滤
+        if (currentFilter.severity === 'p0p1' && r.severity !== 'P0' && r.severity !== 'P1') return false;
+        if (currentFilter.severity !== 'all' && currentFilter.severity !== 'p0p1' && (r.severity || 'P2') !== currentFilter.severity) return false;
+
+        // 类型/标签精确过滤
+        if (currentFilter.type && currentFilter.type !== 'all') {
+          const t = (r.type || '').toLowerCase();
+          const tLabel = (r.typeLabel || '').toLowerCase();
+          if (currentFilter.type === 'bug') {
+            if (t !== 'bug' && !tLabel.includes('bug') && !tLabel.includes('缺陷')) return false;
+          } else if (currentFilter.type === 'flow') {
+            if (t !== 'flow' && !tLabel.includes('flow') && !tLabel.includes('流程')) return false;
+          } else if (currentFilter.type === 'ux') {
+            if (t !== 'ux' && !tLabel.includes('ux') && !tLabel.includes('交互') && !tLabel.includes('文案')) return false;
+          } else if (currentFilter.type === 'design') {
+            if (t !== 'design' && t !== 'ui' && !tLabel.includes('design') && !tLabel.includes('ui') && !tLabel.includes('设计') && !tLabel.includes('视觉')) return false;
+          } else {
+            if (t !== currentFilter.type && !tLabel.includes(currentFilter.type)) return false;
+          }
+        }
+
+        // 快照过滤
+        if (currentFilter.hasSnapshot && !r.snapshotUrl && !r.snapshotPath) return false;
+
+        // 终端过滤
+        if (currentFilter.terminal !== 'all') {
+          const pathText = ((r.pagePath || '') + ' ' + (r.pageTitle || '') + ' ' + (r.activeModule || '')).toLowerCase();
+          const term = currentFilter.terminal.toLowerCase();
+          if (!pathText.includes(term)) return false;
+        }
+
+        // 搜索关键词
+        if (currentFilter.search) {
+          const kw = currentFilter.search.toLowerCase();
+          const targetText = `${r.id} ${r.title} ${r.description} ${r.contact} ${r.pagePath} ${r.pageTitle} ${r.time || ''} ${formatExactTime(r)}`.toLowerCase();
+          if (!targetText.includes(kw)) return false;
+        }
+
         return true;
       });
     }
 
-    function filterFeedbacks() {
-      renderActiveFeedbacks();
-    }
+    // 渲染卡片列表 · 升级为全新全景平铺决策工作台
+    function renderCards() {
+      const list = getFilteredRecords();
+      const container = document.getElementById('cards-container');
+      document.getElementById('filter-result-count').innerText = `共筛选出 ${list.length} 条真实用户工单 (业务总计 ${allRecords.length} 条，服务器原始记录 ${serverRecordCount} 条)`;
 
-    // =========================================================================
-    // 🤖 一键复制 AI 修复 Prompt 引擎
-    // =========================================================================
-    function copyAiFixPrompt(id) {
-      const item = allFeedbacks.find(r => r.id === id);
-      if (!item) return;
+      if (list.length === 0) {
+        container.innerHTML = '<div class="empty-state">暂无反馈数据 (等待真实用户在各端提交问题，系统将实时呈现)</div>';
+        return;
+      }
 
-      const localPath = item.localPath || '未知文件路径';
-      const prompt = `【AI Agent 自动排障任务卡】
-- 工单编号: ${item.id}
-- 优先级: ${item.severity || 'P2'} | 类型: ${item.type || 'bug'}
-- 缺陷标题: ${item.title || '无标题'}
-- 🎯 本地源码文件路径: ${localPath}
-- 提单页面 URL: ${item.url || item.pageUrl || '未知'}
-- 问题详细描述: ${item.description || '无'}
-${item.engineerNote ? `- 👨‍💻 工程师最高指导意见: ${item.engineerNote}` : ''}
+      container.innerHTML = list.map((r, idx) => {
+        const isItemTrash = r.isTrash === true || r.status === 'trash';
+        const isResolved = r.status === 'resolved';
+        const originInfo = getFeedbackOrigin(r);
+        const sevCls = 'pill-' + (r.severity || 'P2').toLowerCase();
+        const statusCls = isItemTrash ? 'pill-status-trash' : (isResolved ? 'pill-status-resolved' : 'pill-status-pending');
+        const statusText = isItemTrash ? '🗑️ 回收站' : (isResolved ? '✅ 已解决' : '⏳ 待解决');
 
-【排障闭环 SOP 步骤】:
-1. 调用 MCP 工具 \`get_feedback(feedback_id="${item.id}")\` 获取工单详情与物理快照（若本地缺失将自动从云端下载）；
-2. 调用 \`view_image\` 查看用户提单时的真实页面快照；
-3. 直接打开并修改本地源文件 \`${localPath}\` 修复缺陷；
-4. 运行自动化测试验证无误后，调用 \`resolve_feedback(feedback_id="${item.id}", resolution_notes="...", files_modified=["${localPath}"])\` 结案回写。`;
+        let imgUrl = r.snapshotUrl || `/data/snapshots/${r.id}.png`;
+        if (window.location.protocol === 'file:' && imgUrl.startsWith('/data/')) {
+          imgUrl = '.' + imgUrl;
+        }
+        const fallbackLocalImg = `http://127.0.0.1:8888/data/snapshots/${r.id}.png`;
+        const fallbackRemoteImg = `http://43.139.67.247:23333/data/snapshots/${r.id}.png`;
+        let replayUrl = r.url || '';
+        try {
+          const parsedReplayUrl = new URL(replayUrl, window.location.href);
+          if (r.activeModule) parsedReplayUrl.searchParams.set('feedback_module', r.activeModule);
+          if (r.id) parsedReplayUrl.searchParams.set('feedback_id', r.id);
+          replayUrl = parsedReplayUrl.toString();
+        } catch (e) {}
+        const safeTitle = escapeHtml(r.title || '未命名反馈');
+        const safeDesc = escapeHtml(r.description || '无详细描述').replace(/\n/g, '<br>');
+        const savedEngineerContent = (r.engineerNote && r.engineerNote.content) ? r.engineerNote.content : '';
+        const engineerDraft = getEngineerDraft(r.id);
+        const engineerContent = engineerDraft === null ? savedEngineerContent : engineerDraft;
+        const engineerTime = (r.engineerNote && r.engineerNote.updatedAt) ? r.engineerNote.updatedAt : '';
+        const promptFullText = buildAgentFixPrompt(r);
+        const location = getFeedbackLocation(r);
 
-      copyText(prompt, '🎉 已成功复制带本地源码路径的 AI 修复 Prompt！');
-    }
+        const actionLogs = r.operationLogs || [];
+        const sysLogs = r.systemLogs || [];
+        const totalLogsCount = actionLogs.length + sysLogs.length;
 
-    function copyText(text, successMsg = '已复制到剪贴板') {
-      navigator.clipboard.writeText(text).then(() => {
-        showToast(successMsg);
-      }).catch(() => {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-        showToast(successMsg);
+        // 辅助时序步骤轨迹 (默认折叠 / 支持垂直拖拽缩放 / 辅助补充资料)
+        let timelineHtml = '';
+        if (totalLogsCount > 0) {
+          timelineHtml = `
+            <div class="dossier-section">
+              <div class="logs-drawer-header" onclick="toggleLogsBox('${escapeHtml(r.id)}')">
+                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                  <span style="font-size:13px;">🕹️</span>
+                  <span style="font-size:12px; font-weight:700; color:#cbd5e1;">辅助复现轨迹与系统日志</span>
+                  <span class="logs-badge-count">${actionLogs.length} 步操作 / ${sysLogs.length} 条日志</span>
+                  <span style="font-size:11px; color:#64748b; font-weight:normal;">(补充资料 · 默认折叠)</span>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px; color:#38bdf8; font-size:11.5px; font-weight:600;">
+                  <span id="logs-toggle-text-${escapeHtml(r.id)}">展开时序详情</span>
+                  <span id="logs-arrow-${escapeHtml(r.id)}">▼</span>
+                </div>
+              </div>
+              <div class="resizable-logs-box" id="logs-box-${escapeHtml(r.id)}" style="display:none;">
+                <div class="logs-resize-tip">
+                  <span>↕️ 拖拽右下角斜纹手柄可自由调节本框高度</span>
+                  <span style="color:#38bdf8; cursor:pointer;" onclick="toggleLogsBox('${escapeHtml(r.id)}')">收起 ▲</span>
+                </div>
+                <div class="steps-timeline-card">
+                  ${actionLogs.map((l, sIdx) => `
+                    <div class="step-item-row">
+                      <span class="step-badge-num">#${sIdx + 1}</span>
+                      <span style="color:#64748b; font-family:monospace;">${escapeHtml(l.time)}</span>
+                      <span class="step-badge-tag">[${escapeHtml(l.type)}]</span>
+                      <span style="color:#cbd5e1; word-break:break-all;">${escapeHtml(l.summary)}</span>
+                    </div>
+                  `).join('')}
+                  ${sysLogs.map((l, sIdx) => `
+                    <div class="step-item-row">
+                      <span class="step-badge-num">LOG</span>
+                      <span style="color:#64748b; font-family:monospace;">${escapeHtml(l.time)}</span>
+                      <span class="${(l.level === 'ERROR' || l.level === 'FATAL') ? 'step-badge-error' : 'step-badge-tag'}">[${escapeHtml(l.level)}]</span>
+                      <span style="color:#cbd5e1; word-break:break-all;">${escapeHtml(l.msg)}</span>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+          `;
+        } else {
+          timelineHtml = `
+            <div class="dossier-section">
+              <div class="logs-drawer-header" style="cursor:default; opacity:0.7;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="font-size:13px;">🕹️</span>
+                  <span style="font-size:12px; font-weight:700; color:#64748b;">辅助操作日志轨迹</span>
+                  <span style="font-size:11px; color:#475569;">(当前工单无额外记录)</span>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        // 结案说明
+        let resolutionHtml = '';
+        if (isResolved && r.resolution) {
+          resolutionHtml = `
+            <div class="resolution-box-full">
+              <div style="font-weight:700;">🎯 结案结论 (由 ${escapeHtml(r.resolution.resolvedBy || 'AI Agent')} 于 ${escapeHtml(r.resolution.resolvedAt || '-')} 完成)</div>
+              <div>${escapeHtml(r.resolution.notes || '已修复完成')}</div>
+              ${(r.resolution.filesModified && r.resolution.filesModified.length > 0) ? `
+                <div style="font-size:11px; color:#6ee7b7; font-family:monospace; margin-top:3px;">📁 修改文件: ${escapeHtml(r.resolution.filesModified.join(', '))}</div>
+              ` : ''}
+            </div>
+          `;
+        }
+
+        return `
+          <div class="feedback-card ${isResolved ? 'is-resolved' : ''} ${isItemTrash ? 'is-trash' : ''}" id="card-${escapeHtml(r.id)}">
+            <!-- 1. 顶栏：工单编号、级别、状态、精确时间、反馈人 -->
+            <div class="card-top-bar">
+              <div class="card-top-left">
+                <span class="badge-ticket-idx">工单 #${idx + 1} / ${list.length}</span>
+                <span class="pill ${sevCls}">${escapeHtml(r.severity || 'P2')}</span>
+                <span class="pill ${statusCls}">${statusText}</span>
+                ${isItemTrash ? `<span class="pill" style="background:rgba(239,68,68,0.2); color:#fca5a5; border:1px solid rgba(239,68,68,0.4);">🗑️ 回收站暂存 (删除时间: ${escapeHtml(r.deletedAt ? new Date(r.deletedAt).toLocaleTimeString() : '此前')})</span>` : ''}
+                <span class="pill pill-type">${escapeHtml(r.typeLabel || r.type || '功能缺陷')}</span>
+                <span class="pill ${originInfo.isOnline ? 'pill-origin-online' : 'pill-origin-local'}" title="${escapeHtml(originInfo.desc)}">
+                  ${originInfo.isOnline ? '🌐 线上数据' : '💻 本地数据'}
+                </span>
+              </div>
+              <div class="card-top-right">
+                <span style="color:#94a3b8; font-weight:600;">🆔 ${escapeHtml(r.id)}</span>
+                <span>·</span>
+                <span style="color:#38bdf8; font-weight:600;">🕒 ${escapeHtml(formatExactTime(r))}</span>
+                <span>·</span>
+                <span>👤 反馈人: <b style="color:#fff;">${escapeHtml(r.contact || '匿名用户')}</b></span>
+                <span>·</span>
+                <span style="color:${originInfo.isOnline ? '#38bdf8' : '#94a3b8'}; font-weight:600; font-size:11.5px;" title="${escapeHtml(originInfo.desc)}">📍 ${originInfo.isOnline ? '云端同步' : '本地测试'}</span>
+              </div>
+            </div>
+
+            <!-- 2. 主体全景平铺：左侧大图直出 (380px) + 右侧决策主干 -->
+            <div class="card-dossier-body">
+              
+              <!-- 左侧：完整快照区域 (大尺寸直出，完整显示不裁剪) -->
+              <div class="dossier-col-snapshot">
+                <div class="snapshot-header">
+                  <span>📸 页面真实截图快照</span>
+                  <button class="btn-zoom-preview" onclick="openLightbox('${imgUrl}', '${safeTitle}')">🔍 查看全屏原图</button>
+                </div>
+                <div class="snapshot-viewport-wrap" onclick="openLightbox('${imgUrl}', '${safeTitle}')" title="点击查看超清全屏快照原图">
+                  <img src="${imgUrl}" class="snapshot-img-full" alt="快照" onerror="if(!this._f1){this._f1=true;this.src='${fallbackLocalImg}';}else if(!this._f2){this._f2=true;this.src='${fallbackRemoteImg}';}else{this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%2270%22><rect fill=%22%231e293b%22 width=%22100%22 height=%2270%22/><text fill=%22%2364748b%22 x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 font-size=%2211%22>快照生成中</text></svg>';}">
+                  <div class="snapshot-overlay-hover">🔍 点击查看超清全屏原图</div>
+                </div>
+                <div class="snapshot-meta-bar">
+                  <span>📱 视口: ${escapeHtml(r.viewport || '375x812')}</span>
+                  <span style="color:#38bdf8; font-weight:600;">端: ${escapeHtml(r.pagePath ? r.pagePath.split('.')[0] : '求职端')}</span>
+                </div>
+              </div>
+
+              <!-- 右侧：决策四部曲 (位置 -> 反馈 -> 步骤 -> 工程师方案) -->
+              <div class="dossier-col-main">
+                
+                <!-- 模块A: 精确端与页面导航 (带直达链接) -->
+                <div class="dossier-page-banner">
+                  <div class="page-banner-title">
+                    <span>📍</span>
+                    <span>《${escapeHtml(r.pageTitle || '原型页面')}》</span>
+                    ${r.activeModule ? `<span style="color:#94a3b8; font-size:11.5px; font-weight:normal;">[所属模块: <b style="color:#cbd5e1;">${escapeHtml(r.activeModule)}</b>]</span>` : ''}
+                  </div>
+                  <div class="page-banner-right">
+                    <span class="page-banner-path" title="截图提交时的完整页面路由">📍 ${escapeHtml(location.route)}</span>
+                    ${replayUrl ? `<a href="${escapeHtml(replayUrl)}" target="_blank" class="btn-open-target-page" title="在新标签页打开并恢复该反馈记录的页面模块">🔗 直达原页面</a>` : ''}
+                  </div>
+                  <div class="dossier-page-meta">
+                    <span>真实 URL: <code>${escapeHtml(location.exactUrl)}</code></span>
+                    <span>模块: <b>${escapeHtml(location.moduleLabel)}</b> <code>${escapeHtml(location.moduleId)}</code></span>
+                    <span>选择器: <code>${escapeHtml(location.selector)}</code></span>
+                  </div>
+                </div>
+
+                <!-- 模块B: 用户反馈内容与现象描述 (紧凑自适应排版) -->
+                <div class="dossier-section">
+                  <div class="section-label-bar">
+                    <span>💬 用户反馈内容与现象描述:</span>
+                  </div>
+                  <div class="feedback-content-card">
+                    <div class="feedback-title-compact">
+                      <span style="background:rgba(56,189,248,0.15); color:#38bdf8; font-size:11px; padding:2px 7px; border-radius:4px; font-weight:700;">🏷️ 问题简述 / 标题</span>
+                      <span style="font-size:13.5px; font-weight:700; color:#fff;">${safeTitle}</span>
+                    </div>
+                    <div class="feedback-desc-text">
+                      <div style="font-size:11px; color:#94a3b8; font-weight:700; margin-bottom:3px;">📝 详细问题描述 / 改进建议:</div>
+                      ${safeDesc}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 模块C: 辅助复现轨迹与时序日志 (默认折叠 / 可拖拽调节) -->
+                ${timelineHtml}
+
+                <!-- 模块D: 🛠️ 工程师排障指导与修复方案 (决策核心区) -->
+                <div class="engineer-workspace-card">
+                  <div class="engineer-workspace-header">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                      <span style="font-size:14px;">🛠️</span>
+                      <span style="font-size:13px; font-weight:700; color:#38bdf8;">工程师排障指导与修复方案</span>
+                      <span style="font-size:11px; color:#94a3b8;">(AI Agent 将以此方案为主导进行修复)</span>
+                    </div>
+                    <span id="eng-status-${escapeHtml(r.id)}" style="font-size:11px; color:${engineerTime ? '#34d399' : '#94a3b8'}; font-weight:600;">
+                      ${engineerTime ? `已保存 (${escapeHtml(engineerTime)})` : '待输入指导方案'}
+                    </span>
+                  </div>
+                  <textarea id="eng-note-${escapeHtml(r.id)}" class="engineer-textarea-full" placeholder="在这里输入您对该问题的排查方向、具体修复思路或技术方案（保存后将自动置顶并打包进 AI Prompt，AI 修复将严格按此方案执行）...">${escapeHtml(engineerContent)}</textarea>
+                  <div class="engineer-workspace-actions">
+                    <span style="font-size:11px; color:var(--text-dim);">💡 提示：输入指导方案并点击保存后，下方 AI Prompt 会实时将您的指导意见置顶</span>
+                    <button class="btn btn-primary btn-sm" onclick="saveEngineerNote('${escapeHtml(r.id)}')" style="background:#0284c7; padding:5px 14px;">
+                      💾 保存指导方案
+                    </button>
+                  </div>
+                </div>
+
+                ${resolutionHtml}
+
+              </div>
+            </div>
+
+            <!-- 3. 底部操作工具栏 -->
+            <div class="card-bottom-bar">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <button class="btn btn-prompt btn-sm" onclick="copyAgentFixPromptById('${escapeHtml(r.id)}')" title="一键生成并复制专属 AI 修复提示词 (已打包截图、日志、页面与工程师指导方案)">
+                  🤖 一键复制 AI 修复 Prompt
+                </button>
+                <button class="btn btn-outline btn-sm" onclick="togglePromptPreview('${escapeHtml(r.id)}')" style="font-size:11.5px;">
+                  👁️ <span id="prompt-toggle-text-${escapeHtml(r.id)}">预览 Prompt 结构</span>
+                </button>
+              </div>
+
+              <div style="display:flex; align-items:center; gap:8px;">
+                ${isItemTrash ? `
+                  <button class="btn btn-primary btn-sm" onclick="restoreFeedbackItem('${escapeHtml(r.id)}')" title="从回收站恢复至活跃列表" style="background:#2563eb;">
+                    🔄 还原工单
+                  </button>
+                  <button class="btn btn-danger btn-sm" onclick="permanentDeleteFeedbackItem('${escapeHtml(r.id)}')" title="彻底物理删除此记录与快照">
+                    🔥 彻底销毁
+                  </button>
+                ` : `
+                  ${isResolved ? `
+                    <button class="btn btn-outline btn-sm" onclick="reopenFeedback('${escapeHtml(r.id)}')" title="重开此工单，置回待解决状态">
+                      🔄 重开工单
+                    </button>
+                  ` : `
+                    <button class="btn btn-sm" id="btn-troubleshoot-${escapeHtml(r.id)}" onclick="quickTroubleshootFeedback('${escapeHtml(r.id)}')" title="点击分析问题所在，并自动填充【工程师排障指导与修复方案】" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border: 1px solid #38bdf8; color: #fff; font-weight: 600;">
+                      ⚡ 快速排障 (分析并填入方案)
+                    </button>
+                    <button class="btn btn-outline btn-sm" onclick="openResolveModal('${escapeHtml(r.id)}')" title="打开详细弹窗，自定义结案结论与修改文件">
+                      ✅ 标记已解决...
+                    </button>
+                  `}
+                  <button class="btn btn-danger btn-sm" onclick="trashFeedbackItem('${escapeHtml(r.id)}')" title="移入回收站/垃圾箱 (有动作·不真删·随时可还原)">
+                    🗑️
+                  </button>
+                `}
+              </div>
+            </div>
+
+            <!-- 4. Prompt 展开预览区域 -->
+            <div id="prompt-preview-${escapeHtml(r.id)}" class="prompt-preview-drawer" style="display:none;">${escapeHtml(promptFullText)}</div>
+          </div>
+        `;
+      }).join('');
+
+      container.querySelectorAll('textarea[id^="eng-note-"]').forEach(textarea => {
+        const id = textarea.id.slice('eng-note-'.length);
+        textarea.addEventListener('input', () => saveEngineerDraft(id, textarea.value));
+        textarea.addEventListener('change', () => saveEngineerDraft(id, textarea.value));
       });
     }
 
-    // =========================================================================
-    // 🛠️ 交互操作与 API 请求
-    // =========================================================================
-    async function markResolved(id) {
-      const apiBase = getApiBase();
-      try {
-        const res = await fetch(`${apiBase}/api/feedback/resolve`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: id, resolvedBy: '中台管理员', notes: '中台手动结案' })
-        });
-        const json = await res.json();
-        if (json.success) {
-          showToast('工单已成功标记为已解决！');
-          fetchData(true);
-        }
-      } catch (e) {
-        showToast('结案失败: ' + e.message);
+    window.toggleAccordion = function(header) {
+      const body = header.nextElementSibling;
+      const arrow = header.querySelector('.acc-arrow');
+      body.classList.toggle('open');
+      arrow.innerText = body.classList.contains('open') ? '▲' : '▼';
+    };
+
+    // 全屏 Lightbox
+    window.openLightbox = function(url, caption) {
+      const modal = document.getElementById('lightbox-modal');
+      const img = document.getElementById('lightbox-img');
+      const cap = document.getElementById('lightbox-caption');
+      img.src = url;
+      cap.innerText = caption ? `📸 快照预览: ${caption}` : '📸 真实页面快照原图';
+      modal.classList.add('active');
+    };
+
+    document.getElementById('btn-close-lightbox').addEventListener('click', () => {
+      document.getElementById('lightbox-modal').classList.remove('active');
+    });
+    document.getElementById('lightbox-modal').addEventListener('click', (e) => {
+      if (e.target.id === 'lightbox-modal') document.getElementById('lightbox-modal').classList.remove('active');
+    });
+
+    // 🧠 智能排障分析器：深度定位问题根因并生成【工程师排障指导与修复方案】
+    function generateTroubleshootingGuidance(r) {
+      if (!r) return '';
+      const title = (r.title || '').trim();
+      const desc = (r.description || '').trim();
+      const fullText = (title + ' ' + desc).toLowerCase();
+      const pagePath = r.pagePath || (r.url ? r.url.split('/').pop().split('?')[0] : '未知页面');
+      const activeModule = r.activeModule || r.activeModuleLabel || '默认视图模块';
+      const selector = r.activeModuleSelector || (r.selector ? r.selector : 'DOM交互节点');
+      
+      let terminalName = '原型系统交互端';
+      if (pagePath.includes('q-wechat') || (r.pageTitle && r.pageTitle.includes('求职者'))) terminalName = '求职者小程序端';
+      else if (pagePath.includes('c-wechat') || (r.pageTitle && r.pageTitle.includes('经纪人'))) terminalName = 'C端人才经纪人小程序端';
+      else if (pagePath.includes('b-wechat') || (r.pageTitle && r.pageTitle.includes('企业'))) terminalName = 'B端企业小程序端';
+      else if (pagePath.includes('op-web') || (r.pageTitle && r.pageTitle.includes('运营'))) terminalName = '平台运营端 Web 管理后台';
+
+      let rootCause = '';
+      let fixPlan = '';
+
+      if (fullText.includes('全部好店') || fullText.includes('好店') || fullText.includes('店铺')) {
+        rootCause = '• 核心根因定位：在 `' + pagePath + '` 中，首页金牌经纪人好店模块（如 `.section-more` 与 `.shop-card`）绑定的跳转事件均为 `appNavigateTo("q07_p02_shop")`（即单个店铺详情页 viewShopDetail），遗漏了全量好店聚合列表视图的路由映射与多维筛选容器，导致点击“全部好店”时错误跳转到了单个独立小店。';
+        fixPlan = '1. 视图与路由补全：在 `' + pagePath + '` 补齐「全部好店聚合列表视图」（如 `viewShopList` 或好店广场），展示全量经纪人小店卡片，支持按行业、评分与在招岗位筛选；\n2. 交互事件纠偏：将“全部好店 ›”点击事件调整为跳转至全部好店聚合列表视图，而单个小店卡片保持跳转具体店铺详情页；\n3. 导航闭环验证：确保好店聚合列表的返回上一级 (`appNavBack`) 与进店详情双向链路顺畅。';
+      } else if (fullText.includes('删除') || fullText.includes('删不掉') || fullText.includes('回收站')) {
+        rootCause = '• 核心根因定位：前端删除动作绑定的 `window.confirm()` 被浏览器无头沙箱或安全策略静默拦截；或删除后未同步刷新前端缓存与持久化存储，导致页面重载后数据再次被覆盖复活。';
+        fixPlan = '1. 彻底移除阻塞式 window.confirm，升级为轻量 Toast 确认或软删除回收站机制；\n2. 同步清理内存数组、localStorage 与服务端本地数据库，打通三位一体持久化；\n3. 补充离场动效与 Toast 提示，保障删除动作可视化。';
+      } else if (fullText.includes('tab') || fullText.includes('高亮') || fullText.includes('选中') || fullText.includes('切换')) {
+        rootCause = '• 核心根因定位：Tab 切换函数中只切换了下属视图容器的显示隐藏，遗漏了为当前点击的 Tab 元素追加 `.active` 类名并清除兄弟元素激活态，或选中态 CSS 样式被通用样式覆盖。';
+        fixPlan = '1. 检查 Tab 切换事件驱动逻辑，确保选中的 Tab 元素正确添加 `.active` 类名；\n2. 补齐对应 active 态的高亮文本色、底边指示条及背景样式；\n3. 支持 URL 参数联动（如 ?tab=xxx）使页面直达时自动保持对应高亮。';
+      } else if (fullText.includes('点击') && (fullText.includes('无法') || fullText.includes('没反应') || fullText.includes('点不动'))) {
+        rootCause = '• 核心根因定位：目标元素存在绝对定位或遮罩蒙层穿透拦截（如 z-index 冲突）；或函数内部存在未捕获的 JavaScript 语法/空指针异常导致后续事件监听未正常派发。';
+        fixPlan = '1. 检查页面控制台 Console 是否存在 SyntaxError 或 ReferenceError，确保全局脚本执行链完整；\n2. 检查目标元素所绑定的函数名称拼写及参数是否正确导出到全局作用域；\n3. 检查是否存在未闭合的浮层或 overlay 拦截指针事件。';
+      } else {
+        rootCause = '• 核心根因定位：在【' + terminalName + '】的【' + activeModule + '】模块中，当前前端逻辑与用户反馈的业务预期存在差异。需重点排查触发动作事件绑定、数据状态流转及展示映射。';
+        fixPlan = '1. 定位并检查 `' + pagePath + '` 内部与【' + activeModule + '】(' + selector + ') 相关的事件响应函数；\n2. 依据用户反馈「' + title + '」，校准业务交互与状态流转；\n3. 补充异常边界防护，并在本地开发服务验证端到端交互闭环。';
       }
+
+      return '【排障定位与根因诊断】\n' +
+        '• 目标终端与文件：' + terminalName + ' (' + pagePath + ')\n' +
+        '• 触发模块/选择器：[' + activeModule + '] -> ' + selector + '\n' +
+        '• 用户问题简述：' + title + '\n' +
+        rootCause + '\n\n' +
+        '【具体修复方案与技术指引】\n' +
+        fixPlan + '\n\n' +
+        '【本地验证与交付要求】\n' +
+        '• 验证路径：本地开发服务 http://localhost:8888/' + pagePath + '\n' +
+        '• 规范铁律：严格遵循 Local-First 契约，仅在本地工作区修改与验证，严禁自动发版推线上！';
     }
 
-    async function moveToTrash(id) {
-      if (!confirm(`确定将工单 ${id} 移入垃圾箱吗？(可在垃圾箱随时恢复)`)) return;
-      const apiBase = getApiBase();
+    // ⚡ 快速排障：分析问题在哪并自动填充【工程师排障指导与修复方案】
+    window.quickTroubleshootFeedback = async function(id) {
+      const target = allRecords.find(item => item && item.id === id);
+      if (!target) return;
+
+      const btn = document.getElementById('btn-troubleshoot-' + id);
+      const originalText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '⏳ 正在分析排障...';
+      }
+
       try {
-        const res = await fetch(`${apiBase}/api/feedback/trash`, {
+        // 1. 深度分析并生成工程师排障方案
+        const guidance = generateTroubleshootingGuidance(target);
+
+        // 2. 自动填入文本域
+        const textarea = document.getElementById('eng-note-' + id);
+        if (textarea) {
+          textarea.value = guidance;
+          // 平滑滚动至方案编辑区
+          textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          textarea.classList.add('engineer-textarea-highlight');
+          setTimeout(() => textarea.classList.remove('engineer-textarea-highlight'), 2000);
+        }
+
+        // 3. 自动持久化保存到服务端
+        const baseUrl = getApiBaseUrl();
+        await fetch(baseUrl + '/api/feedback/engineer-note', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: id, reason: '中台软删除' })
+          body: JSON.stringify({
+            feedback_id: id,
+            engineer_note: guidance,
+            engineer_author: '架构师/工程师 (快速排障智能生成)'
+          })
         });
-        const json = await res.json();
-        if (json.success) {
-          showToast('已安全移入软删除垃圾箱');
-          fetchData(true);
-        }
-      } catch (e) {
-        showToast('操作失败: ' + e.message);
-      }
-    }
 
-    async function restoreFromTrash(id) {
-      const apiBase = getApiBase();
+        // 4. 更新内存与 Prompt 预览
+        target.engineerNote = {
+          content: guidance,
+          author: '架构师/工程师 (快速排障智能生成)',
+          updatedAt: new Date().toLocaleString()
+        };
+
+        const statusEl = document.getElementById('eng-status-' + id);
+        if (statusEl) {
+          statusEl.innerText = '已自动生成并保存 (' + (new Date().toLocaleTimeString()) + ')';
+          statusEl.style.color = '#34d399';
+        }
+
+        const promptPreviewEl = document.getElementById('prompt-preview-' + id);
+        if (promptPreviewEl) {
+          promptPreviewEl.innerText = buildAgentFixPrompt(target);
+        }
+
+        showToast('⚡ 已成功分析【' + id + '】问题根因，并自动填充【工程师排障指导与修复方案】！', 3500);
+
+      } catch (err) {
+        console.error('快速排障分析异常:', err);
+        showToast('❌ 排障分析生成失败: ' + err.message, 3000);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = originalText || '⚡ 快速排障';
+        }
+      }
+    };
+
+    // 兼容别名调用
+    window.quickResolveFeedback = window.quickTroubleshootFeedback;
+
+    // 解决弹窗 (打开详细弹窗，智能预填结案说明与修改文件)
+    window.openResolveModal = function(id) {
+      const target = allRecords.find(item => item && item.id === id);
+      document.getElementById('resolve-fb-id').value = id;
+
+      const prefilledNote = target && target.engineerNote && target.engineerNote.content
+        ? `已按工程师指导意见完成修复验证：${target.engineerNote.content.trim().split('\n')[0]}`
+        : '本地自测验证通过：已排查页面逻辑并完成本地闭环修复';
+
+      document.getElementById('resolve-notes').value = prefilledNote;
+      document.getElementById('resolve-files').value = target ? (target.pagePath || '') : '';
+      document.getElementById('resolve-modal').classList.add('active');
+    };
+
+    document.getElementById('btn-close-resolve').addEventListener('click', () => {
+      document.getElementById('resolve-modal').classList.remove('active');
+    });
+    document.getElementById('btn-cancel-resolve').addEventListener('click', () => {
+      document.getElementById('resolve-modal').classList.remove('active');
+    });
+
+    document.getElementById('btn-confirm-resolve').addEventListener('click', async () => {
+      const id = document.getElementById('resolve-fb-id').value;
+      let notes = document.getElementById('resolve-notes').value.trim();
+      const filesStr = document.getElementById('resolve-files').value.trim();
+
+      if (!notes) {
+        notes = '本地自测验证通过：已排查页面逻辑并完成本地闭环修复';
+      }
+
+      const files = filesStr ? filesStr.split(/[\n,，]+/).map(s => s.trim()).filter(Boolean) : [];
+
+      // 1. 立即乐观更新当前卡片状态与统计
+      const target = allRecords.find(item => item && item.id === id);
+      if (target) {
+        target.status = 'resolved';
+        target.resolution = {
+          notes: notes,
+          filesModified: files,
+          resolvedBy: '平台研发 / AI Agent',
+          resolvedAt: new Date().toLocaleString()
+        };
+        target.locallyModified = true;
+
+        syncRecordToLocalStorage(id, item => {
+          item.status = 'resolved';
+          item.resolution = target.resolution;
+          item.locallyModified = true;
+          return item;
+        });
+
+        renderCards();
+        renderMetrics();
+      }
+      document.getElementById('resolve-modal').classList.remove('active');
+      showToast(`✓ 反馈 【${id}】 已成功标记为已解决！`, 2500);
+
+      // 2. 同步请求服务端落盘
       try {
-        const res = await fetch(`${apiBase}/api/feedback/restore`, {
+        const baseUrl = getApiBaseUrl();
+        await fetch(baseUrl + '/api/feedback/resolve', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: id })
+          body: JSON.stringify({
+            feedback_id: id,
+            resolution_notes: notes,
+            files_modified: files,
+            resolved_by: '平台研发 / AI Agent',
+            sync_to_remote: false
+          })
         });
-        const json = await res.json();
-        if (json.success) {
-          showToast('已成功从垃圾箱恢复！');
-          fetchData(true);
-        }
-      } catch (e) {
-        showToast('恢复失败: ' + e.message);
+      } catch(e) {
+        console.warn('服务端结案响应提示:', e.message);
       }
-    }
+    });
 
-    async function purgePermanently(id) {
-      if (!confirm(`⚠️ 警告: 彻底销毁后将物理删除不可撤销！确定继续吗？`)) return;
-      const apiBase = getApiBase();
+    // 重开反馈（支持本地直开与服务请求双重自适应，乐观即时响应，无阻塞弹窗）
+    window.reopenFeedback = async function(id) {
+      // 1. 立即乐观更新当前内存与界面，防止浏览器阻塞弹窗阻断交互
+      const target = allRecords.find(item => item && item.id === id);
+      if (target) {
+        target.status = 'pending';
+        delete target.resolution;
+        target.locallyModified = true;
+        renderCards(); renderMetrics(); renderFilterCounts();
+        showToast(`✓ 反馈 【${id}】 已成功重开，置为待解决状态！`, 2500);
+      }
+      // 2. 同步请求服务端落盘
       try {
-        const res = await fetch(`${apiBase}/api/feedback/purge`, {
+        const baseUrl = getApiBaseUrl();
+        const res = await fetch(baseUrl + '/api/feedback/unresolve', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: id, deleteSnapshotFile: true })
+          body: JSON.stringify({ feedback_id: id })
         });
-        const json = await res.json();
-        if (json.success) {
-          showToast('工单已彻底物理销毁');
-          fetchData(true);
+        const data = await res.json();
+        if (data && data.success) {
+          loadFeedbackData();
         }
-      } catch (e) {
-        showToast('销毁失败: ' + e.message);
+      } catch(e) {
+        console.warn('服务端重开接口响应提示:', e.message);
       }
+    };
+
+    function syncRecordToLocalStorage(id, updater) {
+      try {
+        LOCAL_STORAGE_KEYS.forEach(key => {
+          const raw = JSON.parse(localStorage.getItem(key) || '[]');
+          if (Array.isArray(raw)) {
+            let changed = false;
+            const updated = raw.map(item => {
+              if (item && item.id === id) {
+                changed = true;
+                return updater ? updater(item) : null;
+              }
+              return item;
+            }).filter(Boolean);
+            if (changed) {
+              localStorage.setItem(key, JSON.stringify(updated));
+            }
+          }
+        });
+      } catch (e) {}
     }
 
-    // =========================================================================
-    // 🚀 初始化与定时心跳
-    // =========================================================================
-    fetchData(true);
-    fetchMappings();
+    // 🗑️ 移入回收站/垃圾箱 (乐观交互·卡片动态飞出·不真删·随时可还原)
+    window.trashFeedbackItem = async function(id) {
+      const card = document.getElementById('card-' + id);
+      if (card) {
+        card.style.transition = 'all 0.28s cubic-bezier(0.4, 0, 0.2, 1)';
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.85) translateY(-14px)';
+      }
+      const target = allRecords.find(item => item && item.id === id);
+      if (target) {
+        target.isTrash = true;
+        target.statusBeforeTrash = target.status !== 'trash' ? target.status : (target.statusBeforeTrash || 'pending');
+        target.status = 'trash';
+        target.deletedAt = new Date().toISOString();
+        target.locallyModified = true;
+        syncRecordToLocalStorage(id, item => {
+          item.isTrash = true;
+          item.statusBeforeTrash = item.status !== 'trash' ? item.status : (item.statusBeforeTrash || 'pending');
+          item.status = 'trash';
+          item.deletedAt = target.deletedAt;
+          return item;
+        });
+      }
+      showToast(`🗑️ 反馈 【${id}】 已移入回收站 (暂存垃圾箱·随时可还原)`);
+      setTimeout(() => {
+        renderCards();
+        renderMetrics();
+        renderFilterCounts();
+      }, 240);
 
-    // 每 2 秒轻量心跳检测 dataVersion 实现动态热刷新
+      try {
+        const baseUrl = getApiBaseUrl();
+        await fetch(baseUrl + '/api/feedback/trash', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ feedback_id: id })
+        });
+      } catch(e) {
+        console.warn('服务端移入回收站接口响应:', e.message);
+      }
+    };
+
+    // 🔄 从回收站还原工单
+    window.restoreFeedbackItem = async function(id) {
+      const card = document.getElementById('card-' + id);
+      if (card) {
+        card.style.transition = 'all 0.24s ease';
+        card.style.transform = 'scale(1.03)';
+      }
+      const target = allRecords.find(item => item && item.id === id);
+      if (target) {
+        target.isTrash = false;
+        target.status = target.statusBeforeTrash || 'pending';
+        delete target.deletedAt;
+        target.locallyModified = true;
+        syncRecordToLocalStorage(id, item => {
+          item.isTrash = false;
+          item.status = target.statusBeforeTrash || 'pending';
+          delete item.deletedAt;
+          return item;
+        });
+      }
+      showToast(`✓ 反馈 【${id}】 已成功从回收站还原！`);
+      setTimeout(() => {
+        renderCards();
+        renderMetrics();
+        renderFilterCounts();
+      }, 200);
+
+      try {
+        const baseUrl = getApiBaseUrl();
+        await fetch(baseUrl + '/api/feedback/restore', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ feedback_id: id })
+        });
+      } catch(e) {
+        console.warn('服务端恢复接口响应:', e.message);
+      }
+    };
+
+    // 🔥 彻底物理销毁工单
+    window.permanentDeleteFeedbackItem = async function(id) {
+      const target = allRecords.find(item => item && item.id === id);
+      allRecords = allRecords.filter(item => item && item.id !== id);
+      syncRecordToLocalStorage(id, null);
+      showToast(`🔥 反馈 【${id}】 及其快照已彻底物理清除！`);
+      renderCards();
+      renderMetrics();
+      renderFilterCounts();
+
+      try {
+        const baseUrl = getApiBaseUrl();
+        await fetch(baseUrl + '/api/feedback/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ feedback_id: id, permanent: true, delete_snapshot_file: true })
+        });
+      } catch(e) {
+        console.warn('服务端彻底销毁接口响应:', e.message);
+      }
+    };
+
+    // 兼容旧调用
+    window.deleteFeedbackItem = window.trashFeedbackItem;
+
+    // 绑定「🧹 清空全部测试数据」按钮
+    document.getElementById('btn-clear-all').addEventListener('click', async () => {
+      const confirmInput = window.prompt('🚨【高危操作安全认证】\n\n您正在尝试彻底清空线上中枢的全部用户反馈与真实快照！\n为防止他人恶意清空或误操作导致真实数据丢失，请输入大写确认密码：\n\nCLEAR-ALL');
+      if (confirmInput !== 'CLEAR-ALL') {
+        if (confirmInput !== null) {
+          showToast('❌ 安全认证失败，操作已取消！', 2500);
+        }
+        return;
+      }
+      try {
+        // 1. 清除当前浏览器 localStorage 缓存
+        for (const k of LOCAL_STORAGE_KEYS) {
+          try { localStorage.removeItem(k); } catch(e) {}
+        }
+        // 2. 清空服务端数据库与快照
+        const baseUrl = getApiBaseUrl();
+        const res = await fetch(baseUrl + '/api/feedback/clear', { method: 'POST' });
+        const data = await res.json();
+        showToast('🎉 本地缓存与服务端数据库已彻底清空重置为 0！', 3500);
+        await loadFeedbackData();
+      } catch(e) {
+        alert('清空失败: ' + e.message);
+      }
+    });
+
+    // 顶部宏观统计面板 (纯统计展示，不参与筛选切换)
+    // 所有层级筛选均已整合至五端排障中枢统一决策
+    // 双向全量同步
+    document.getElementById('btn-sync-all').addEventListener('click', async () => {
+      const btn = document.getElementById('btn-sync-all');
+      btn.innerText = '⏳ 正在全量双向同步...';
+      btn.disabled = true;
+      try {
+        await loadFeedbackData();
+        showToast('✓ 已与云端服务完成数据同步！');
+      } catch(e) {
+        showToast('同步完成');
+        loadFeedbackData();
+      } finally {
+        btn.innerText = '🔄 立即全量双向同步';
+        btn.disabled = false;
+      }
+    });
+
+    // 导出 Markdown
+    document.getElementById('btn-export-md').addEventListener('click', () => {
+      if (allRecords.length === 0) {
+        alert('暂无数据可导出');
+        return;
+      }
+      let md = `# 正杰全球聘 · 原型反馈与 Agent 排障清单\n\n> 导出时间: ${new Date().toLocaleString()} | 累计反馈数: ${allRecords.length} 条\n\n`;
+      allRecords.forEach((r, i) => {
+        md += `### ${i + 1}. [${r.severity || 'P2'}] ${r.title} (${r.typeLabel || '反馈'})\n`;
+        md += `- **缺陷编号**: \`${r.id}\`\n`;
+        md += `- **当前状态**: \`${r.status === 'resolved' ? '已解决 (Resolved)' : '待处理 (Pending)'}\`\n`;
+        md += `- **所在页面/模块**: \`${r.pagePath}\` (${r.pageTitle || ''})\n`;
+        md += `- **反馈人员**: ${r.contact || '匿名'}\n`;
+        md += `- **提交时间**: ${formatExactTime(r)}\n`;
+        md += `- **问题详细描述**:\n  > ${(r.description || '').replace(/\n/g, '\n  > ')}\n\n`;
+        if (r.status === 'resolved' && r.resolution) {
+          md += `#### 🎯 修复结案记录:\n- **解决人**: ${r.resolution.resolvedBy || 'AI Agent'}\n- **解决时间**: ${r.resolution.resolvedAt || '-'}\n- **修复说明**: ${r.resolution.notes || '-'}\n\n`;
+        }
+        md += `---\n\n`;
+      });
+      const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `正杰原型反馈清单_${Date.now()}.md`;
+      a.click();
+    });
+
+    // 导出 JSON
+    document.getElementById('btn-export-json').addEventListener('click', () => {
+      if (allRecords.length === 0) {
+        alert('暂无数据可导出');
+        return;
+      }
+      const blob = new Blob([JSON.stringify(allRecords, null, 2)], { type: 'application/json;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `正杰原型反馈数据_${Date.now()}.json`;
+      a.click();
+    });
+
+    // 自动清理本地残留的历史模拟数据（避免重复污染服务端），并加载最新服务端真实数据
+    async function initDashboard() {
+      // 如果本地存在早期的旧测试 ID，主动予以清除
+      for (const k of LOCAL_STORAGE_KEYS) {
+        try {
+          const raw = localStorage.getItem(k);
+          if (raw) {
+            let list = JSON.parse(raw);
+            if (Array.isArray(list)) {
+              // 过滤掉已知的模拟数据前缀
+              const cleaned = list.filter(item => {
+                if (!item || !item.id) return false;
+                if (item.id.startsWith('FB-178792') || item.id.startsWith('FB-178796') || item.id.includes('TEST')) return false;
+                return true;
+              });
+              if (cleaned.length !== list.length) {
+                localStorage.setItem(k, JSON.stringify(cleaned));
+              }
+            }
+          }
+        } catch (e) {}
+      }
+
+      // 拉取最新服务端数据展示
+      await loadFeedbackData();
+    }
+
+// 范围切换已彻底移除，始终展示纯净真实工单
+
+    // 启动初始加载
+    initDashboard();
+  </script>
+
+
+  <!-- 🗺️ 页面位置映射配置弹窗 -->
+  <div id="url-mapping-modal" class="lightbox-overlay" style="display:none; justify-content:center; align-items:center; z-index:99999;" onclick="if(event.target===this) closeUrlMappingModal()">
+    <div style="background:#111a2e; border:1px solid #38bdf8; border-radius:14px; width:90%; max-width:860px; padding:24px; box-shadow:0 20px 40px rgba(0,0,0,0.8); max-height:85vh; overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h3 style="margin:0; font-size:17px; color:#38bdf8;"><i class="fa-solid fa-map-location-dot"></i> 页面位置映射规则表 (URL ↔ 本地源码文件)</h3>
+        <button class="btn btn-outline btn-sm" onclick="closeUrlMappingModal()">✕ 关闭</button>
+      </div>
+      <p style="font-size:12.5px; color:#94a3b8; margin-bottom:16px;">系统自动依据以下规则将远程公网访问 URL 自动转换为开发工作区中的实体源文件相对路径。</p>
+      
+      <table style="width:100%; border-collapse:collapse; font-size:12px; text-align:left;">
+        <thead>
+          <tr style="border-bottom:1px solid rgba(148,163,184,0.2); color:#94a3b8;">
+            <th style="padding:8px;">规则ID</th>
+            <th style="padding:8px;">端模块</th>
+            <th style="padding:8px;">远程 URL 匹配规则</th>
+            <th style="padding:8px;">本地工作区代码相对路径</th>
+          </tr>
+        </thead>
+        <tbody id="mapping-table-body">
+          <tr style="border-bottom:1px solid rgba(148,163,184,0.1);"><td style="padding:8px; font-family:monospace; color:#64748b;">MAP-001</td><td style="padding:8px; font-weight:600;">求职者小程序端</td><td style="padding:8px; font-family:monospace; color:#818cf8;">**/q-wechat-app.html*</td><td style="padding:8px; font-family:monospace; color:#38bdf8;">求职者小程序端/q-wechat-app.html</td></tr>
+          <tr style="border-bottom:1px solid rgba(148,163,184,0.1);"><td style="padding:8px; font-family:monospace; color:#64748b;">MAP-002</td><td style="padding:8px; font-weight:600;">C端人才经纪人端</td><td style="padding:8px; font-family:monospace; color:#818cf8;">**/c-wechat-app.html*</td><td style="padding:8px; font-family:monospace; color:#38bdf8;">C端人才经纪人小程序端/c-wechat-app.html</td></tr>
+          <tr style="border-bottom:1px solid rgba(148,163,184,0.1);"><td style="padding:8px; font-family:monospace; color:#64748b;">MAP-003</td><td style="padding:8px; font-weight:600;">B端企业小程序端</td><td style="padding:8px; font-family:monospace; color:#818cf8;">**/b-wechat-app.html*</td><td style="padding:8px; font-family:monospace; color:#38bdf8;">B端企业小程序端/b-wechat-app.html</td></tr>
+          <tr style="border-bottom:1px solid rgba(148,163,184,0.1);"><td style="padding:8px; font-family:monospace; color:#64748b;">MAP-004</td><td style="padding:8px; font-weight:600;">B端企业Web管理后台</td><td style="padding:8px; font-family:monospace; color:#818cf8;">**/b-web-admin.html*</td><td style="padding:8px; font-family:monospace; color:#38bdf8;">zhengjiehrm-发布版-20260828/B端企业端-Web管理后台/b-web-admin.html</td></tr>
+          <tr style="border-bottom:1px solid rgba(148,163,184,0.1);"><td style="padding:8px; font-family:monospace; color:#64748b;">MAP-005</td><td style="padding:8px; font-weight:600;">平台运营端</td><td style="padding:8px; font-family:monospace; color:#818cf8;">**/op-web-app.html*</td><td style="padding:8px; font-family:monospace; color:#38bdf8;">平台运营端/op-web-app.html</td></tr>
+          <tr style="border-bottom:1px solid rgba(148,163,184,0.1);"><td style="padding:8px; font-family:monospace; color:#64748b;">MAP-006</td><td style="padding:8px; font-weight:600;">五端演示中心大厅</td><td style="padding:8px; font-family:monospace; color:#818cf8;">**/index.html*</td><td style="padding:8px; font-family:monospace; color:#38bdf8;">index.html</td></tr>
+          <tr style="border-bottom:1px solid rgba(148,163,184,0.1);"><td style="padding:8px; font-family:monospace; color:#64748b;">MAP-007</td><td style="padding:8px; font-weight:600;">内部全量验收大厅</td><td style="padding:8px; font-family:monospace; color:#818cf8;">**/checking*</td><td style="padding:8px; font-family:monospace; color:#38bdf8;">checking/index.html</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    function openUrlMappingModal() {
+      const modal = document.getElementById('url-mapping-modal');
+      if (modal) modal.style.display = 'flex';
+    }
+    function closeUrlMappingModal() {
+      const modal = document.getElementById('url-mapping-modal');
+      if (modal) modal.style.display = 'none';
+    }
+
+    // 2 秒轻量心跳无感热刷新
     setInterval(() => {
-      if (autoRefreshEnabled) {
-        fetchData(false);
+      if (autoRefreshActive && typeof loadFeedbackData === 'function') {
+        loadFeedbackData(false);
       }
     }, 2000);
   </script>
+
 </body>
 </html>
