@@ -174,13 +174,14 @@ async function run() {
 
   // 4. 复制并定制 Dashboard
   let dashboardHtml = fs.readFileSync(path.join(templatesDir, 'dashboard/feedback-dashboard.html'), 'utf-8');
-  if (mode === 'online') {
-    dashboardHtml = dashboardHtml.replace(/const DEFAULT_REMOTE_URL = .*;/, `const DEFAULT_REMOTE_URL = '${remoteServerUrl}';`);
-  } else if (mode === 'local') {
-    dashboardHtml = dashboardHtml.replace(/const DEFAULT_REMOTE_URL = .*;/, `const DEFAULT_REMOTE_URL = 'http://127.0.0.1:${port}';`);
-  } else {
-    dashboardHtml = dashboardHtml.replace(/const DEFAULT_REMOTE_URL = .*;/, `const DEFAULT_REMOTE_URL = '${remoteServerUrl}';`);
-  }
+  let remoteHost = "your-server-ip";
+  try { remoteHost = new URL(remoteServerUrl).hostname; } catch(e) {}
+  dashboardHtml = dashboardHtml
+    .split("http://your-server-ip:port").join(remoteServerUrl)
+    .split("your-server-ip").join(remoteHost)
+    .split("http://127.0.0.1:8888").join("http://127.0.0.1:" + port)
+    .split("http://localhost:8888").join("http://localhost:" + port)
+    .split("port === '8888'").join("port === '" + port + "'");
   fs.writeFileSync(path.join(targetDir, 'feedback-dashboard.html'), dashboardHtml, 'utf-8');
   console.log(`  ${c.green}✓${c.reset} 复制可视化大盘: feedback-dashboard.html`);
 
@@ -200,9 +201,17 @@ async function run() {
   let serverJs = fs.readFileSync(path.join(templatesDir, 'server/server.js'), 'utf-8');
   serverJs = serverJs.replace(/const PORT = process.env.PORT \|\| 8888;/, `const PORT = process.env.PORT || ${port};`);
   fs.writeFileSync(path.join(scriptsDir, 'server.js'), serverJs, 'utf-8');
-  fs.copyFileSync(path.join(templatesDir, 'server/start.sh'), path.join(scriptsDir, 'start.sh'));
-  fs.copyFileSync(path.join(templatesDir, 'server/stop.sh'), path.join(scriptsDir, 'stop.sh'));
-  fs.copyFileSync(path.join(templatesDir, 'server/status.sh'), path.join(scriptsDir, 'status.sh'));
+  let startSh = fs.readFileSync(path.join(templatesDir, 'server/start.sh'), 'utf-8');
+  startSh = startSh.replace(/:8888/g, `:${port}`);
+  fs.writeFileSync(path.join(scriptsDir, 'start.sh'), startSh, 'utf-8');
+
+  let stopSh = fs.readFileSync(path.join(templatesDir, 'server/stop.sh'), 'utf-8');
+  stopSh = stopSh.replace(/:8888/g, `:${port}`);
+  fs.writeFileSync(path.join(scriptsDir, 'stop.sh'), stopSh, 'utf-8');
+
+  let statusSh = fs.readFileSync(path.join(templatesDir, 'server/status.sh'), 'utf-8');
+  statusSh = statusSh.replace(/:8888/g, `:${port}`).replace(/端口: 8888/g, `端口: ${port}`);
+  fs.writeFileSync(path.join(scriptsDir, 'status.sh'), statusSh, 'utf-8');
   fs.chmodSync(path.join(scriptsDir, 'start.sh'), '755');
   fs.chmodSync(path.join(scriptsDir, 'stop.sh'), '755');
   fs.chmodSync(path.join(scriptsDir, 'status.sh'), '755');
