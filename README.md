@@ -1,4 +1,4 @@
-# 🐞 Floating Feedback Collector (悬浮问题反馈收集器与排障中枢套件 V3.1)
+# 🐞 Floating Feedback Collector (悬浮问题反馈收集器与排障中枢套件 V3.2)
 
 > **企业级前端原型与 Web 系统的即插即用悬浮反馈收集器、可视化驾驶舱大盘与 AI Agent MCP 闭环排障工作流引擎。**  
 > 打通 **“端侧轻量无感采集 ➔ 真实 DOM 离线快照 / 40 步操作轨迹 ➔ 可视化大盘治理 ➔ AI Agent 通过 MCP 协议自动化闭环排障”** 全链路。
@@ -68,7 +68,7 @@
 > 将以下 Prompt 发送给 Codex / Claude Code / Agent：
 
 ```markdown
-请帮我在当前项目中一键接入「悬浮问题反馈收集器套件 V3.1」：
+请帮我在当前项目中一键接入「悬浮问题反馈收集器套件 V3.2」：
 1. 运行初始化命令（模式可选 online 或 local，请将 <YOUR_SERVER_URL> 替换为你的服务器地址，如 http://api.yourdomain.com:8888）：
    node ~/.codex/skills/floating-feedback-collector/cli/init.js --mode=online --target=. --port=8888 --remote-url="<YOUR_SERVER_URL>" --inject --mcp --yes
 2. 启动本地服务：bash scripts/start.sh && bash scripts/status.sh

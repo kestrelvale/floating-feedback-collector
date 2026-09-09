@@ -1218,7 +1218,7 @@
         </div>
       </div>
       <div class="header-actions">
-        <!-- 🌟 V3.1 双模式切换开关 -->
+        <!-- 🌟 V3.2 双模式切换开关 -->
         <div style="display:inline-flex; background:rgba(15,23,42,0.85); border:1px solid rgba(56,189,248,0.3); border-radius:8px; padding:2px; margin-right:6px;">
           <button id="btn-mode-online" onclick="setDashboardMode('online')" style="padding:5px 12px; border-radius:6px; border:none; background:linear-gradient(135deg,#0284c7,#0369a1); color:#fff; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:5px;">
             🌐 线上模式
@@ -1953,9 +1953,9 @@
           isOnline: true,
           isLocal: false,
           label: '🌐 线上数据',
-          desc: '源自生产/测试服务器同步 (http://43.139.67.247:23333)',
+          desc: '源自生产/测试服务器同步 (http://your-server-ip:port)',
           env: 'online',
-          remoteServerUrl: r.remoteServerUrl || 'http://43.139.67.247:23333'
+          remoteServerUrl: r.remoteServerUrl || 'http://your-server-ip:port'
         };
       }
       if (r.origin === 'local' || r.dataSource === 'local') {
@@ -1971,7 +1971,7 @@
       const source = (r.source || '').toLowerCase();
       const remoteImg = (r.remoteImageUrl || '').toLowerCase();
 
-      const isRemote = url.includes('43.139.67.247') || source.includes('43.139.67.247') || remoteImg.includes('43.139.67.247');
+      const isRemote = url.includes('your-server-ip') || source.includes('your-server-ip') || remoteImg.includes('your-server-ip');
       const isLocal = url.includes('127.0.0.1') || url.includes('localhost') || url.startsWith('file:') || source.includes('127.0.0.1') || source.includes('localhost') || source.startsWith('file:');
 
       if (isRemote && !isLocal) {
@@ -1979,9 +1979,9 @@
           isOnline: true,
           isLocal: false,
           label: '🌐 线上数据',
-          desc: '源自生产/测试服务器同步 (http://43.139.67.247:23333)',
+          desc: '源自生产/测试服务器同步 (http://your-server-ip:port)',
           env: 'online',
-          remoteServerUrl: 'http://43.139.67.247:23333'
+          remoteServerUrl: 'http://your-server-ip:port'
         };
       }
 
@@ -2009,7 +2009,7 @@
 
       const descText = String(r.description || '无详细描述').split('\n').join('\n> ');
 
-      const currentOrigin = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : 'http://43.139.67.247:23333';
+      const currentOrigin = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : 'http://your-server-ip:port';
       const remoteImgUrl = `${currentOrigin}/data/snapshots/${r.id}.png`;
 
       const snapLine = (r.snapshotPath || r.snapshotUrl)
@@ -2042,7 +2042,7 @@
       }
 
       const originInfo = getFeedbackOrigin(r);
-      const originSection = originInfo.isOnline ? `【数据来源与归属环境】: 🌐 线上云端同步数据 (Online Remote: http://43.139.67.247:23333)
+      const originSection = originInfo.isOnline ? `【数据来源与归属环境】: 🌐 线上云端同步数据 (Online Remote: http://your-server-ip:port)
 【数据血缘说明】: 本工单源自线上用户/测试人员在公网环境提交，已增量同步至本地数据库。
 
 【数据同步与闭环策略 (Sync Policy)】:
@@ -2115,8 +2115,8 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
         // 统一 API 基础地址 (在线上模式下统一回传云端服务器，线下模式走本地)
     function getApiBaseUrl() {
       if (typeof currentDashboardMode !== 'undefined' && currentDashboardMode === 'online') {
-        const isAlreadyOnCloud = window.location.hostname.includes('43.139.67.247') || window.location.port === '23333';
-        return isAlreadyOnCloud ? '' : 'http://43.139.67.247:23333';
+        const isAlreadyOnCloud = window.location.hostname.includes('your-server-ip') || window.location.port === '23333';
+        return isAlreadyOnCloud ? '' : 'http://your-server-ip:port';
       } else {
         const isLocalServer = window.location.port === '8888';
         return isLocalServer ? '' : 'http://127.0.0.1:8888';
@@ -2221,7 +2221,7 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
       }
     };
 
-    let currentDashboardMode = (window.location.hostname.includes('43.139.67.247') || !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) ? 'online' : 'online';
+    let currentDashboardMode = (window.location.hostname.includes('your-server-ip') || !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) ? 'online' : 'online';
     let autoRefreshActive = true;
     let autoRefreshTimer = null;
     let currentDataVersion = 0;
@@ -2282,20 +2282,20 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
       renderCards();
     }
 
-    // 加载数据 (V3.1 双模式与数据底座适配)
+    // 加载数据 (V3.2 双模式与数据底座适配)
     async function loadFeedbackData(forceRender = false) {
       try {
         const isFile = window.location.protocol === 'file:';
         const localApiUrl = isFile ? `http://127.0.0.1:8888/api/feedback/list?includeTrash=true&t=${Date.now()}` : `/api/feedback/list?includeTrash=true&t=${Date.now()}`;
-        const onlineApiUrl = `http://43.139.67.247:23333/api/feedback/list?includeTrash=true&t=${Date.now()}`;
+        const onlineApiUrl = `http://your-server-ip:port/api/feedback/list?includeTrash=true&t=${Date.now()}`;
 
         const isOnline = (currentDashboardMode === 'online');
-        const isAlreadyOnCloud = window.location.hostname.includes('43.139.67.247') || window.location.port === '23333';
+        const isAlreadyOnCloud = window.location.hostname.includes('your-server-ip') || window.location.port === '23333';
         const isLocalHost = window.location.port === '8888';
 
         const cloudUrl = isAlreadyOnCloud 
           ? `/api/feedback/list?includeTrash=true&t=${Date.now()}` 
-          : `http://43.139.67.247:23333/api/feedback/list?includeTrash=true&t=${Date.now()}`;
+          : `http://your-server-ip:port/api/feedback/list?includeTrash=true&t=${Date.now()}`;
 
         const localUrl = isLocalHost 
           ? `/api/feedback/list?includeTrash=true&t=${Date.now()}` 
@@ -2345,9 +2345,9 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
           r.dataSource = isOnline ? 'online' : 'local';
           r.dataSourceLabel = isOnline ? '🌐 线上数据' : '💻 本地数据';
           if (isOnline) {
-            r.remoteServerUrl = 'http://43.139.67.247:23333';
+            r.remoteServerUrl = 'http://your-server-ip:port';
             if (!r.snapshotUrl && r.id) {
-              r.snapshotUrl = `http://43.139.67.247:23333/data/snapshots/${r.id}.png`;
+              r.snapshotUrl = `http://your-server-ip:port/data/snapshots/${r.id}.png`;
             }
           }
           return r;
@@ -2590,7 +2590,7 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
           imgUrl = '.' + imgUrl;
         }
         const fallbackLocalImg = `http://127.0.0.1:8888/data/snapshots/${r.id}.png`;
-        const fallbackRemoteImg = `http://43.139.67.247:23333/data/snapshots/${r.id}.png`;
+        const fallbackRemoteImg = `http://your-server-ip:port/data/snapshots/${r.id}.png`;
         let replayUrl = r.url || '';
         try {
           const parsedReplayUrl = new URL(replayUrl, window.location.href);

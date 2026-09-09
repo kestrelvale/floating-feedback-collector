@@ -2,10 +2,10 @@
 name: floating-feedback-collector
 description: 企业级前端原型/Web系统悬浮问题反馈收集器、DOM真实快照与40步操作日志追踪、可视化大盘Dashboard 3.0及MCP闭环排障工作流引擎。支持【线上模式 (云端单真理源+双端中台镜像)】与【纯线下模式 (本地100%离线)】两套运行机制，内置4大变动触发智能同步与智能源码位置映射。
 metadata:
-  short-description: 前端悬浮反馈收集器与MCP闭环排障引擎 (V3.1 双模式·变动触发版)
+  short-description: 前端悬浮反馈收集器与MCP闭环排障引擎 (V3.2 双模式·变动触发版)
 ---
 
-# Floating Feedback Collector (悬浮问题反馈收集器与排障中枢套件 V3.1)
+# Floating Feedback Collector (悬浮问题反馈收集器与排障中枢套件 V3.2)
 
 企业级前端原型与 Web 系统的即插即用问题反馈与 AI 排障全链路工业级解决方案。  
 打通 **“端侧轻量无感采集 ➔ 真实 DOM 离线快照 / 40 步全景操作轨迹 ➔ 可视化驾驶舱中台治理 ➔ AI Agent 通过 MCP 协议自动化闭环排障”**。

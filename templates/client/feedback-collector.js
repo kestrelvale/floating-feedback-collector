@@ -1162,8 +1162,8 @@
     const localList = getRecords();
     const isFileProto = location.protocol === 'file:';
     const candidateUrls = isFileProto 
-      ? ['http://127.0.0.1:8888/api/feedback/list', 'http://43.139.67.247:23333/api/feedback/list']
-      : ['/api/feedback/list', 'http://127.0.0.1:8888/api/feedback/list', 'http://43.139.67.247:23333/api/feedback/list'];
+      ? ['http://127.0.0.1:8888/api/feedback/list', 'http://your-server-ip:port/api/feedback/list']
+      : ['/api/feedback/list', 'http://127.0.0.1:8888/api/feedback/list', 'http://your-server-ip:port/api/feedback/list'];
 
     if (localList.length > 0) {
       syncRecordsToLocalServer(localList).catch(function() {});
@@ -1984,7 +1984,7 @@
       const ctx = getPageTraceContext();
       const env = getSystemEnvironment();
 
-      const isOnlineEnv = location.hostname === '43.139.67.247';
+      const isOnlineEnv = location.hostname === 'your-server-ip';
       const originType = isOnlineEnv ? 'online' : 'local';
       const originLabel = isOnlineEnv ? '🌐 线上数据' : '💻 本地数据';
 
@@ -1993,7 +1993,7 @@
         origin: originType,
         dataSource: originType,
         dataSourceLabel: originLabel,
-        remoteServerUrl: isOnlineEnv ? 'http://43.139.67.247:23333' : undefined,
+        remoteServerUrl: isOnlineEnv ? 'http://your-server-ip:port' : undefined,
         type: activeTabType,
         typeLabel: typeLabels[activeTabType] || '问题反馈',
         severity: activeSeverity,

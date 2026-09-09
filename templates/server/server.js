@@ -23,7 +23,7 @@ const PORT = process.env.PORT || 8888;
 
 
 
-const SERVER_VERSION = '3.1.0';
+const SERVER_VERSION = '3.2.0';
 const ROOT_DIR = path.resolve(__dirname, '../zhengjiehrm-发布版-20260828');
 
 const MIME_TYPES = {

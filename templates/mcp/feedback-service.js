@@ -10,7 +10,7 @@ const SNAPSHOTS_DIR = path.join(DATA_DIR, "snapshots");
 const ARCHIVE_FILE = path.join(DATA_DIR, "feedback_archive.json");
 const PREFERENCES_FILE = path.join(DATA_DIR, "feedback_user_preferences.json");
 
-const DEFAULT_REMOTE_SERVER_URL = process.env.REMOTE_SERVER_URL || process.env.FEEDBACK_REMOTE_URL || "http://43.139.67.247:23333";
+const DEFAULT_REMOTE_SERVER_URL = process.env.REMOTE_SERVER_URL || process.env.FEEDBACK_REMOTE_URL || "http://your-server-ip:port";
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(SNAPSHOTS_DIR)) fs.mkdirSync(SNAPSHOTS_DIR, { recursive: true });
@@ -103,14 +103,14 @@ function resolveLocalPath(url, pagePath, customMappings = []) {
 
 function getFeedbackOrigin(record) {
   const url = record.url || record.pageUrl || '';
-  const isOnline = url.includes('43.139.67.247') || url.includes('tencentcloud') || (!url.includes('127.0.0.1') && !url.includes('localhost') && !url.startsWith('file://') && url.startsWith('http'));
+  const isOnline = url.includes('your-server-ip') || url.includes('tencentcloud') || (!url.includes('127.0.0.1') && !url.includes('localhost') && !url.startsWith('file://') && url.startsWith('http'));
 
   if (isOnline) {
     return {
       isOnline: true,
       isLocal: false,
       label: '🌐 线上云端数据',
-      desc: '源自公网云端服务器 (http://43.139.67.247:23333)',
+      desc: '源自公网云端服务器 (http://your-server-ip:port)',
       remoteServerUrl: DEFAULT_REMOTE_SERVER_URL,
       env: 'online'
     };
@@ -131,7 +131,7 @@ function readFullDatabase() {
     const db = JSON.parse(raw || "{}");
     if (Array.isArray(db)) {
       return {
-        version: "3.1.0",
+        version: "3.2.0",
         dataVersion: Date.now(),
         updatedAt: new Date().toISOString(),
         feedbacks: db,
@@ -162,7 +162,7 @@ function readFullDatabase() {
     return db;
   } catch (e) {
     return {
-      version: "3.1.0",
+      version: "3.2.0",
       dataVersion: Date.now(),
       updatedAt: new Date().toISOString(),
       feedbacks: [],
@@ -243,7 +243,7 @@ function requestHttp(urlStr, options = {}) {
         method: options.method || "GET",
         headers: {
           "Content-Type": "application/json",
-          "User-Agent": "Zhengjie-Feedback-MCP/3.1",
+          "User-Agent": "Zhengjie-Feedback-MCP/3.2",
           ...(options.headers || {})
         },
         timeout: options.timeout || 10000
