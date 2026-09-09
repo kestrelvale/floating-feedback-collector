@@ -2328,67 +2328,37 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
           currentDataVersion = resData.dataVersion;
         }
 
-        // 兼容单源与多源数据：根据实际请求的目标环境精准判定来源
-        let onlineRes = isOnline ? { status: 'fulfilled', value: resData } : { status: 'rejected' };
-        let localRes = !isOnline ? { status: 'fulfilled', value: resData } : { status: 'rejected' };
+        // 🌟 核心铁律 (单真理数据源)：数据只保留一份，要么线上服务器 (线上模式)，要么线下存储 (线下/本地模式)，绝不跨源混流拼盘
+        const rawList = (resData && Array.isArray(resData.data)) ? resData.data : [];
 
-        const map = new Map();
-
-        // 1. 装载本地数据（打标 origin: 'local'，持久化保存在本地数据库）
-        if (localRes.status === 'fulfilled' && localRes.value && Array.isArray(localRes.value.data)) {
-          localRes.value.data.forEach(r => {
-            if (r && r.id) {
-              r.origin = 'local';
-              r.dataSource = 'local';
-              map.set(r.id, r);
-            }
-          });
+        // 提取并更新对应模式数据源的垃圾箱记录
+        if (resData && Array.isArray(resData.trashBin)) {
+          trashBin = resData.trashBin;
+        } else {
+          trashBin = rawList.filter(r => r.isTrash || r.status === 'trash');
         }
 
-        // 2. 装载云端线上数据并自动同步到本地数据库（服务器上的反馈问题，一定要同步到本地，然后去修改它的状态）
-        if (onlineRes.status === 'fulfilled' && onlineRes.value && Array.isArray(onlineRes.value.data)) {
-          const unsyncedToLocal = [];
-          onlineRes.value.data.forEach(r => {
-            if (r && r.id) {
-              if (!map.has(r.id)) {
-                r.origin = 'online';
-                r.dataSource = 'online';
-                r.dataSourceLabel = '🌐 线上数据';
-                r.remoteServerUrl = 'http://43.139.67.247:23333';
-                map.set(r.id, r);
-                unsyncedToLocal.push(r);
-              } else {
-                // 🌟 本地状态优先！如果本地已存在该工单，严格保留本地的待解决/重开或修改状态，线上绝不反向覆盖本地状态！
-                const localItem = map.get(r.id);
-                if (!localItem.remoteServerUrl) localItem.remoteServerUrl = 'http://43.139.67.247:23333';
-                if (!localItem.remoteImageUrl) localItem.remoteImageUrl = `http://43.139.67.247:23333/data/snapshots/${r.id}.png`;
-              }
+        // 规范化字段与图片路径
+        const mappedList = rawList.map(r => {
+          if (!r) return null;
+          r.origin = isOnline ? 'online' : 'local';
+          r.dataSource = isOnline ? 'online' : 'local';
+          r.dataSourceLabel = isOnline ? '🌐 线上数据' : '💻 本地数据';
+          if (isOnline) {
+            r.remoteServerUrl = 'http://43.139.67.247:23333';
+            if (!r.snapshotUrl && r.id) {
+              r.snapshotUrl = `http://43.139.67.247:23333/data/snapshots/${r.id}.png`;
             }
-          });
-
-          // 按需原则：浏览中台时不自动向服务端触发批量写操作
-        }
-
-        // 3. 本地浏览器 localStorage 补充暂存
-        try {
-          const localRaw = JSON.parse(localStorage.getItem('zhengjie_hrm_feedback_logs_v1') || '[]');
-          if (Array.isArray(localRaw)) {
-            localRaw.forEach(r => {
-              if (r && r.id && !map.has(r.id)) {
-                r.origin = 'local';
-                r.dataSource = 'local';
-                map.set(r.id, r);
-              }
-            });
           }
-        } catch(e) {}
+          return r;
+        }).filter(Boolean);
 
-        const rawList = Array.from(map.values());
+        // 去重
         const seenKeys = new Set();
         const dedupedList = [];
-        for (const r of rawList) {
+        for (const r of mappedList) {
           if (!r) continue;
-          const k = ((r.title || '') + ':::' + (r.description || '') + ':::' + (r.pagePath || '')).trim();
+          const k = ((r.id || '') + ':::' + (r.title || '') + ':::' + (r.description || '')).trim();
           if (seenKeys.has(k)) continue;
           seenKeys.add(k);
           dedupedList.push(r);
@@ -3410,59 +3380,19 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
     }
 
     // =========================================================================
-    // 🌟 四大智能按需触发机制 (彻底废除盲目轮询，仅在有数据变动时精准刷新)
+    // 🌟 纯按需动作驱动同步 (无任何后台常驻长连接、零多余负荷、动作触发)
     // =========================================================================
-
-    // 触发机制 1: SSE 服务端数据变更长连接单向通知 (极低开销，变更毫秒级推送)
-    let sseEventSource = null;
-    function initEventDrivenSync() {
-      if (typeof EventSource === 'undefined') return;
-      try {
-        if (sseEventSource) sseEventSource.close();
-        const apiBase = getApiBaseUrl();
-        const sseUrl = apiBase ? `${apiBase}/api/feedback/events` : '/api/feedback/events';
-        
-        sseEventSource = new EventSource(sseUrl);
-        sseEventSource.onmessage = function(event) {
-          try {
-            const data = JSON.parse(event.data);
-            if (data.type && data.type !== 'CONNECTED') {
-              console.log('⚡ [事件驱动] 捕获到服务器数据变更通知:', data.type);
-              loadFeedbackData(true);
-            }
-          } catch(e) {}
-        };
-        sseEventSource.onerror = function() {
-          // 断开时静默重试或降级
-        };
-      } catch(e) {}
-    }
-
-    // 触发机制 2: 跨页面 BroadcastChannel 广播联动 (同浏览器任一端提单即刻通知中台)
     try {
-      const fbChannel = new BroadcastChannel('zj_feedback_channel');
-      fbChannel.onmessage = function(event) {
-        if (event && event.data && event.data.type === 'FEEDBACK_MUTATED') {
-          console.log('⚡ [跨标签联动] 监听到前端用户提交新反馈，触发数据更新');
-          loadFeedbackData(true);
-        }
-      };
-    } catch(e) {}
-
-    // 触发机制 3: 窗口聚焦 / 切回标签页感知 (用户从 IDE 或终端切换回中台时，触发 1 次轻量检查)
-    document.addEventListener('visibilitychange', function() {
-      if (document.visibilityState === 'visible') {
-        console.log('👀 [切回窗口] 检测到用户回到反馈中台，执行一次静默数据对齐');
-        loadFeedbackData(true);
+      if (typeof BroadcastChannel !== 'undefined') {
+        const fbChannel = new BroadcastChannel('zj_feedback_channel');
+        fbChannel.onmessage = function(event) {
+          if (event && event.data && event.data.type === 'FEEDBACK_MUTATED') {
+            console.log('⚡ [动作驱动] 收到前端用户提交动作广播，按需对齐数据');
+            loadFeedbackData(true);
+          }
+        };
       }
-    });
-
-    window.addEventListener('focus', function() {
-      loadFeedbackData(false);
-    });
-
-    // 页面初始化时执行首屏加载并启动事件驱动监听
-    initEventDrivenSync();
+    } catch(e) {}
   </script>
 
 </body>
