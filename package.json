@@ -1,7 +1,7 @@
 {
   "name": "floating-feedback-collector",
-  "version": "1.0.0",
-  "description": "企业级悬浮问题反馈收集器、可视化大盘与 MCP 闭环排障工作流引擎",
+  "version": "3.2.0",
+  "description": "企业级悬浮问题反馈收集器、可视化大盘与 MCP 闭环排障工作流引擎 (V3.2 单真理源+纯按需动作驱动版)",
   "main": "cli/init.js",
   "bin": {
     "feedback-collector": "bin/feedback-collector.js",

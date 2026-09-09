@@ -34,6 +34,12 @@
   if (window.__ZHENGJIE_FEEDBACK_INSTALLED__) return;
   window.__ZHENGJIE_FEEDBACK_INSTALLED__ = true;
 
+  // =========================================================================
+  // ⚙️ 核心运行时配置 (由 Skill / CLI 初始化向导定制)
+  // =========================================================================
+  const RUNTIME_MODE = 'hybrid'; // 'local' | 'online' | 'hybrid'
+  const DEFAULT_REMOTE_URL = 'http://localhost:8888';
+
   const STORAGE_KEY = 'zhengjie_hrm_feedback_logs_v1';
   const TOUR_KEY = 'zhengjie_fb_tour_completed_v2';
   const CONTACT_CACHE_KEY = 'zhengjie_hrm_feedback_contact_v1';

@@ -129,11 +129,27 @@ async function run() {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   });
 
-  // 2. 初始化数据库文件
+  // 2. 初始化 V3.2 4表统一数据底座 (feedbacks, urlMappings, submissionLogs, trashBin)
   const dbFile = path.join(dataDir, 'feedback_database.json');
   if (!fs.existsSync(dbFile)) {
-    fs.writeFileSync(dbFile, '[]\n', 'utf-8');
-    console.log(`  ${c.green}✓${c.reset} 创建空数据库: data/feedback_database.json`);
+    const seedDb = {
+      version: "3.2.0",
+      dataVersion: Date.now(),
+      updatedAt: new Date().toISOString(),
+      feedbacks: [],
+      urlMappings: [
+        { id: "MAP-001", name: "移动端/小程序端", terminal: "移动端", remotePattern: "**/q-wechat-app.html*", localFilePath: "求职者小程序端/q-wechat-app.html", priority: 100, isAutoLearned: false },
+        { id: "MAP-002", name: "经纪人端", terminal: "经纪人端", remotePattern: "**/c-wechat-app.html*", localFilePath: "C端人才经纪人小程序端/c-wechat-app.html", priority: 100, isAutoLearned: false },
+        { id: "MAP-003", name: "企业移动端", terminal: "企业移动端", remotePattern: "**/b-wechat-app.html*", localFilePath: "B端企业小程序端/b-wechat-app.html", priority: 100, isAutoLearned: false },
+        { id: "MAP-004", name: "Web管理后台", terminal: "Web管理端", remotePattern: "**/b-web-admin.html*", localFilePath: "B端企业端-Web管理后台/b-web-admin.html", priority: 100, isAutoLearned: false },
+        { id: "MAP-005", name: "运营端", terminal: "运营中台", remotePattern: "**/op-web-app.html*", localFilePath: "平台运营端/op-web-app.html", priority: 100, isAutoLearned: false },
+        { id: "MAP-006", name: "系统入口大厅", terminal: "入口大厅", remotePattern: "**/index.html*", localFilePath: "index.html", priority: 90, isAutoLearned: false }
+      ],
+      submissionLogs: [],
+      trashBin: []
+    };
+    fs.writeFileSync(dbFile, JSON.stringify(seedDb, null, 2), 'utf-8');
+    console.log(`  ${c.green}✓${c.reset} 初始化 V3.2 四表统一数据底座: data/feedback_database.json`);
   }
 
   // 3. 生成定制化的 feedback-collector.js
