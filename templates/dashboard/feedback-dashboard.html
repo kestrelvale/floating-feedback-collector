@@ -1214,7 +1214,7 @@
             <h1 style="margin:0;">正杰全球聘 · 原型反馈与 Agent 闭环排障中枢</h1>
             <span style="background:#10b981; color:#fff; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px;">V5.3 纯净生产版</span>
           </div>
-          <p style="margin-top:4px;">多端真实快照 | 操作轨迹与系统诊断 | 智能生成 MCP 修复 Prompt | 双向实时同步</p>
+          <p style="margin-top:4px;">多端真实快照 | 操作轨迹与系统诊断 | 智能生成 MCP 修复 Prompt | 提交时同步 · 打开中枢时对齐云端</p>
         </div>
       </div>
       <div class="header-actions">
@@ -1228,10 +1228,10 @@
           </button>
         </div>
 
-        <!-- 🌟 变动触发·智能数据同步指示器 (无盲目轮询，变动即推) -->
-        <div class="btn btn-outline" style="border-color:rgba(16,185,129,0.4); color:#34d399; display:inline-flex; align-items:center; gap:6px; cursor:default;" title="智能事件驱动：仅在用户提交反馈、MCP结案或切回标签页时精准触发刷新，零多余服务器负荷">
-          <span style="width:8px; height:8px; border-radius:50%; background:#10b981; display:inline-block; box-shadow:0 0 6px #10b981;" id="live-dot"></span>
-          <span id="txt-autorefresh">变更触发模式 (零冗余负载)</span>
+        <!-- 🌟 按需动作触发模式指示器 (无后台常驻长连接，无实时轮询，纯动作驱动) -->
+        <div class="btn btn-outline" style="border-color:rgba(56,189,248,0.4); color:#38bdf8; display:inline-flex; align-items:center; gap:6px; cursor:default;" title="纯按需动作驱动：无后台常驻长连接、无定时轮询；仅在打开中枢、前端提交、MCP结案或点击刷新时才按需同步">
+          <span style="font-size:12px;">⚡</span>
+          <span>按需动作驱动模式 (零常驻负载)</span>
         </div>
 
         <a class="btn btn-outline" href="index.html" style="text-decoration:none; display:inline-flex; align-items:center; gap:5px;">
@@ -1241,6 +1241,9 @@
           📋 五端验收大厅
         </a>
         <button class="btn btn-danger" id="btn-clear-all" title="清空全部测试数据，重置本地与云端数据库">🧹 清空全部测试数据</button>
+        <button class="btn btn-outline" id="btn-manual-refresh" onclick="loadFeedbackData(true)" title="手动刷新，重新拉取最新数据">
+          🔄 手动刷新
+        </button>
         <button class="btn btn-primary" id="btn-sync-all" title="与云端/测试服务器双向拉取与推送">
           🔄 立即全量双向同步
         </button>
@@ -2146,7 +2149,7 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
         const data = await res.json();
         if (data && data.success && data.persisted === true) {
           clearEngineerDraft(id);
-          showToast(`✓ 已成功保存【${id}】工程师指导方案！AI Prompt 已实时同步更新！`, 3000);
+          showToast(`✓ 已成功保存【${id}】工程师指导方案！AI Prompt 已同步更新至云端！`, 3000);
           const r = allRecords.find(item => item && item.id === id);
           if (r) {
             r.engineerNote = data.engineerNote || { content: note, author: '工程师', updatedAt: new Date().toLocaleString() };
@@ -2243,7 +2246,12 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
       }
       showToast(`已切换至: ${mode === 'online' ? '🌐 线上模式 (直连云端服务器)' : '💻 线下模式 (本地离线数据库)'}`);
       currentDataVersion = 0;
-      loadFeedbackData(true);
+          // =========================================================================
+    // 🚀 初始化：打开中枢时主动同步云端数据 (On-Open Cloud Sync)
+    // =========================================================================
+    console.log('🚀 [打开中枢] 执行一次云端数据对齐与最新工单拉取...');
+    loadFeedbackData(true);
+
     }
 
     function toggleAutoRefresh() {
@@ -2320,9 +2328,9 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
           currentDataVersion = resData.dataVersion;
         }
 
-        // 兼容单源与多源数据
-        let onlineRes = { status: 'rejected' };
-        let localRes = { status: 'fulfilled', value: resData };
+        // 兼容单源与多源数据：根据实际请求的目标环境精准判定来源
+        let onlineRes = isOnline ? { status: 'fulfilled', value: resData } : { status: 'rejected' };
+        let localRes = !isOnline ? { status: 'fulfilled', value: resData } : { status: 'rejected' };
 
         const map = new Map();
 
@@ -2358,16 +2366,7 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
             }
           });
 
-          // 若发现线上有新增工单未在本地数据库落盘，自动增量同步保存至本地服务端
-          if (unsyncedToLocal.length > 0) {
-            const baseUrl = getApiBaseUrl();
-            fetch(baseUrl + '/api/feedback/save', {
-              method: 'POST',
-              mode: 'cors',
-              headers: { 'Content-Type': 'application/json; charset=UTF-8' },
-              body: JSON.stringify({ records: unsyncedToLocal })
-            }).catch(() => {});
-          }
+          // 按需原则：浏览中台时不自动向服务端触发批量写操作
         }
 
         // 3. 本地浏览器 localStorage 补充暂存
@@ -2414,17 +2413,25 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
 
     // 渲染 KPI 指标与各筛选标签页动态数量徽标
     function renderMetrics() {
+      // 🌟 严格隔离活跃工单与回收站垃圾箱工单：回收站/软删除工单绝对不能算入活跃待解决或核心阻断！
+      const activeRecords = allRecords.filter(r => !r.isTrash && r.status !== 'trash');
+      const trashRecords = allRecords.filter(r => r.isTrash || r.status === 'trash');
+
       const total = allRecords.length;
-      const pending = allRecords.filter(r => r.status !== 'resolved').length;
-      const resolved = allRecords.filter(r => r.status === 'resolved').length;
-      const highSev = allRecords.filter(r => (r.severity === 'P0' || r.severity === 'P1') && r.status !== 'resolved').length;
-      const snapshots = allRecords.filter(r => r.snapshotUrl || r.snapshotPath).length;
+      const pending = activeRecords.filter(r => r.status !== 'resolved').length;
+      const resolved = activeRecords.filter(r => r.status === 'resolved').length;
+      const highSev = activeRecords.filter(r => (r.severity === 'P0' || r.severity === 'P1') && r.status !== 'resolved').length;
+      const snapshots = activeRecords.filter(r => r.snapshotUrl || r.snapshotPath).length;
 
       document.getElementById('val-total').innerText = total;
       document.getElementById('val-pending').innerText = pending;
       document.getElementById('val-resolved').innerText = resolved;
       document.getElementById('val-high-sev').innerText = highSev;
       document.getElementById('val-snaps').innerText = snapshots;
+
+      // 同步顶部回收站/垃圾箱数量徽标
+      const trashTopEl = document.getElementById('cnt-trash-top');
+      if (trashTopEl) trashTopEl.innerText = trashRecords.length;
 
       renderFilterCounts();
       renderTerminalCommandCenter();
@@ -2740,7 +2747,7 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
                   <button class="btn-zoom-preview" onclick="openLightbox('${imgUrl}', '${safeTitle}')">🔍 查看全屏原图</button>
                 </div>
                 <div class="snapshot-viewport-wrap" onclick="openLightbox('${imgUrl}', '${safeTitle}')" title="点击查看超清全屏快照原图">
-                  <img src="${imgUrl}" class="snapshot-img-full" alt="快照" onerror="if(!this._f1){this._f1=true;this.src='${fallbackLocalImg}';}else if(!this._f2){this._f2=true;this.src='${fallbackRemoteImg}';}else{this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%2270%22><rect fill=%22%231e293b%22 width=%22100%22 height=%2270%22/><text fill=%22%2364748b%22 x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 font-size=%2211%22>快照生成中</text></svg>';}">
+                  <img src="${imgUrl}" class="snapshot-img-full" alt="快照" onerror="this.onerror=null; this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%2270%22><rect fill=%22%231e293b%22 width=%22100%22 height=%2270%22/><text fill=%22%2364748b%22 x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22 font-size=%2211%22>快照待生成</text></svg>';">
                   <div class="snapshot-overlay-hover">🔍 点击查看超清全屏原图</div>
                 </div>
                 <div class="snapshot-meta-bar">

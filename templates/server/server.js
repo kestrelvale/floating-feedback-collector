@@ -21,20 +21,7 @@ const {
 
 const PORT = process.env.PORT || 8888;
 
-const sseSubscribers = new Set();
 
-function broadcastEvent(eventType, payload = {}) {
-  const msg = `data: ${JSON.stringify({ type: eventType, timestamp: Date.now(), ...payload })}
-
-`;
-  for (const client of sseSubscribers) {
-    try {
-      client.write(msg);
-    } catch (e) {
-      sseSubscribers.delete(client);
-    }
-  }
-}
 
 const SERVER_VERSION = '3.1.0';
 const ROOT_DIR = path.resolve(__dirname, '../zhengjiehrm-发布版-20260828');
@@ -114,22 +101,7 @@ const server = http.createServer(async (req, res) => {
   }
 
 
-  // 🌟 轻量级 SSE 事件驱动推送 (只有数据变动时才下发通知，彻底告别盲目轮询)
-  if (pathname === '/api/feedback/events' && req.method === 'GET') {
-    res.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-      'Access-Control-Allow-Origin': '*'
-    });
-    res.write('data: {"type":"CONNECTED"}\n\n');
-    sseSubscribers.add(res);
 
-    req.on('close', () => {
-      sseSubscribers.delete(res);
-    });
-    return;
-  }
 
   // 1. 获取反馈列表 API
   if (pathname === '/api/feedback/list' && req.method === 'GET') {
@@ -233,8 +205,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     writeFullDatabase(db);
-    broadcastEvent('FEEDBACK_SAVED', { dataVersion: db.dataVersion });
-    return sendJson(res, 200, {
+        return sendJson(res, 200, {
       success: true,
       savedCount: savedCount,
       dataVersion: db.dataVersion,
@@ -262,8 +233,7 @@ const server = http.createServer(async (req, res) => {
     };
 
     writeFullDatabase(db);
-    broadcastEvent('ENGINEER_NOTE_ADDED', { feedback_id: feedback_id, dataVersion: db.dataVersion });
-    return sendJson(res, 200, { success: true, dataVersion: db.dataVersion, feedback: record });
+        return sendJson(res, 200, { success: true, dataVersion: db.dataVersion, feedback: record });
   }
 
   // 5. 录入工程师指导意见 API
@@ -284,8 +254,7 @@ const server = http.createServer(async (req, res) => {
     record.updatedAt = new Date().toISOString();
 
     writeFullDatabase(db);
-    broadcastEvent('ENGINEER_NOTE_ADDED', { feedback_id: feedback_id, dataVersion: db.dataVersion });
-    return sendJson(res, 200, { success: true, dataVersion: db.dataVersion, feedback: record });
+        return sendJson(res, 200, { success: true, dataVersion: db.dataVersion, feedback: record });
   }
 
   // 6. 软删除移入垃圾箱 API
@@ -315,8 +284,7 @@ const server = http.createServer(async (req, res) => {
     });
 
     writeFullDatabase(db);
-    broadcastEvent('FEEDBACK_TRASHED', { id: id, dataVersion: db.dataVersion });
-    return sendJson(res, 200, { success: true, dataVersion: db.dataVersion, message: `工单 ${id} 已移入垃圾箱` });
+        return sendJson(res, 200, { success: true, dataVersion: db.dataVersion, message: `工单 ${id} 已移入垃圾箱` });
   }
 
   // 7. 垃圾箱恢复 API
@@ -342,8 +310,7 @@ const server = http.createServer(async (req, res) => {
 
     db.feedbacks.unshift(restored);
     writeFullDatabase(db);
-    broadcastEvent('FEEDBACK_RESTORED', { id: id, dataVersion: db.dataVersion });
-    return sendJson(res, 200, { success: true, dataVersion: db.dataVersion, feedback: restored });
+        return sendJson(res, 200, { success: true, dataVersion: db.dataVersion, feedback: restored });
   }
 
   // 8. 物理销毁 API
@@ -364,8 +331,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     writeFullDatabase(db);
-    broadcastEvent('FEEDBACK_PURGED', { id: id, dataVersion: db.dataVersion });
-    return sendJson(res, 200, { success: true, dataVersion: db.dataVersion, purgedId: id });
+        return sendJson(res, 200, { success: true, dataVersion: db.dataVersion, purgedId: id });
   }
 
   // 9. URL 映射表查询与保存 API

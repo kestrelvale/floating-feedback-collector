@@ -1436,7 +1436,7 @@
       {
         step: 3,
         title: '🤖 3. 极简提交，AI 闭环排障',
-        desc: '选择缺陷或建议类型，写 1~2 句描述即可提交。数据实时同步至 Dashboard，一键复制 Prompt 即可驱动 AI Agent 自主修复！',
+        desc: '选择缺陷或建议类型，写 1~2 句描述即可提交。提交时自动同步至云端与中台，一键复制 Prompt 即可驱动 AI Agent 自主修复！',
         features: [
           { icon: '⚡', title: '秒级填报', desc: '无需多余字段，极简 3 项完成反馈派发' },
           { icon: '🔄', title: 'MCP 双向闭环', desc: '研发与 Agent 修复后自动回写结案状态' }
@@ -1839,7 +1839,19 @@
       }
     }
 
-    function renderHistoryList() {
+    async function renderHistoryList() {
+      // 🌟 用户主动查看历史时，按需拉取一次最新记录
+      try {
+        const isFileProto = location.protocol === 'file:';
+        const targetUrl = isFileProto ? 'http://127.0.0.1:8888/api/feedback/list?t=' + Date.now() : '/api/feedback/list?t=' + Date.now();
+        const res = await fetch(targetUrl, { mode: 'cors' });
+        if (res.ok) {
+          const json = await res.json();
+          if (json && json.success && Array.isArray(json.data)) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(json.data));
+          }
+        }
+      } catch(e) {}
       // 物理强杀：彻底移除任何历史遗留或注入的清空按钮
       document.querySelectorAll('#zj-fb-clear-btn, .zj-fb-btn-clear').forEach(function(el) {
         if (el && el.parentNode) el.parentNode.removeChild(el);
@@ -2245,7 +2257,7 @@
 
     initPosition();
     updateBadge();
-    autoSyncOnStartup();
+    // 🌟 按需触发原则：页面加载时不发起无谓同步请求，仅在用户提交或查看历史时按需同步
     checkAndLaunchTour();
   }
 
