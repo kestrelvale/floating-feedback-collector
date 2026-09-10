@@ -111,7 +111,7 @@ const server = http.createServer(async (req, res) => {
     const mode = parsedUrl.searchParams.get('mode') || 'all';
     const includeTrash = parsedUrl.searchParams.get('includeTrash') === 'true';
 
-    const db = readFullDatabase(parsedUrl.searchParams.get('projectId') || (body && body.projectId) || 'default');
+    const db = readFullDatabase(parsedUrl.searchParams.get('projectId') || (typeof body !== 'undefined' && body && body.projectId) || 'default');
     let list = db.feedbacks || [];
 
     if (!includeTrash) {
@@ -142,7 +142,7 @@ const server = http.createServer(async (req, res) => {
 
   // 2. 获取统计摘要 API
   if (pathname === '/api/feedback/summary' && req.method === 'GET') {
-    const db = readFullDatabase(parsedUrl.searchParams.get('projectId') || (body && body.projectId) || 'default');
+    const db = readFullDatabase(parsedUrl.searchParams.get('projectId') || (typeof body !== 'undefined' && body && body.projectId) || 'default');
     const list = (db.feedbacks || []).filter(r => !r.isTrash && r.status !== 'trash');
     const pending = list.filter(r => (r.status || 'pending') === 'pending');
     const resolved = list.filter(r => (r.status || '') === 'resolved');
@@ -167,7 +167,7 @@ const server = http.createServer(async (req, res) => {
   // 3. 提交/保存反馈 API
   if (pathname === '/api/feedback/save' && req.method === 'POST') {
     const body = await parseBody(req);
-    const db = readFullDatabase(parsedUrl.searchParams.get('projectId') || (body && body.projectId) || 'default');
+    const db = readFullDatabase(parsedUrl.searchParams.get('projectId') || (typeof body !== 'undefined' && body && body.projectId) || 'default');
     const records = Array.isArray(body.records) ? body.records : (body.feedback ? [body.feedback] : [body]);
 
     let savedCount = 0;
@@ -220,7 +220,7 @@ const server = http.createServer(async (req, res) => {
     const { id, resolvedBy, notes, filesModified } = body;
     if (!id) return sendJson(res, 400, { success: false, message: '缺少参数 id' });
 
-    const db = readFullDatabase(parsedUrl.searchParams.get('projectId') || (body && body.projectId) || 'default');
+    const db = readFullDatabase(parsedUrl.searchParams.get('projectId') || (typeof body !== 'undefined' && body && body.projectId) || 'default');
     const record = db.feedbacks.find(r => r.id === id);
     if (!record) return sendJson(res, 404, { success: false, message: '未找到工单' });
 
@@ -245,7 +245,7 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 400, { success: false, message: '缺少必需参数: feedback_id 或 engineer_note' });
     }
 
-    const db = readFullDatabase(parsedUrl.searchParams.get('projectId') || (body && body.projectId) || 'default');
+    const db = readFullDatabase(parsedUrl.searchParams.get('projectId') || (typeof body !== 'undefined' && body && body.projectId) || 'default');
     const record = db.feedbacks.find(r => r.id === feedback_id);
     if (!record) return sendJson(res, 404, { success: false, message: '未找到指定反馈' });
 
@@ -264,7 +264,7 @@ const server = http.createServer(async (req, res) => {
     const { id, reason } = body;
     if (!id) return sendJson(res, 400, { success: false, message: '缺少参数 id' });
 
-    const db = readFullDatabase(parsedUrl.searchParams.get('projectId') || (body && body.projectId) || 'default');
+    const db = readFullDatabase(parsedUrl.searchParams.get('projectId') || (typeof body !== 'undefined' && body && body.projectId) || 'default');
     const index = db.feedbacks.findIndex(r => r.id === id);
     if (index === -1) return sendJson(res, 404, { success: false, message: '未找到工单' });
 
@@ -294,7 +294,7 @@ const server = http.createServer(async (req, res) => {
     const { id } = body;
     if (!id) return sendJson(res, 400, { success: false, message: '缺少参数 id' });
 
-    const db = readFullDatabase(parsedUrl.searchParams.get('projectId') || (body && body.projectId) || 'default');
+    const db = readFullDatabase(parsedUrl.searchParams.get('projectId') || (typeof body !== 'undefined' && body && body.projectId) || 'default');
     const trashIndex = (db.trashBin || []).findIndex(t => t.feedbackId === id);
     if (trashIndex === -1) return sendJson(res, 404, { success: false, message: '垃圾箱中未找到指定工单' });
 
@@ -320,7 +320,7 @@ const server = http.createServer(async (req, res) => {
     const { id, deleteSnapshotFile } = body;
     if (!id) return sendJson(res, 400, { success: false, message: '缺少参数 id' });
 
-    const db = readFullDatabase(parsedUrl.searchParams.get('projectId') || (body && body.projectId) || 'default');
+    const db = readFullDatabase(parsedUrl.searchParams.get('projectId') || (typeof body !== 'undefined' && body && body.projectId) || 'default');
     db.feedbacks = (db.feedbacks || []).filter(r => r.id !== id);
     db.trashBin = (db.trashBin || []).filter(t => t.feedbackId !== id);
 
@@ -337,7 +337,7 @@ const server = http.createServer(async (req, res) => {
 
   // 9. URL 映射表查询与保存 API
   if (pathname === '/api/mappings/list' && req.method === 'GET') {
-    const db = readFullDatabase(parsedUrl.searchParams.get('projectId') || (body && body.projectId) || 'default');
+    const db = readFullDatabase(parsedUrl.searchParams.get('projectId') || (typeof body !== 'undefined' && body && body.projectId) || 'default');
     return sendJson(res, 200, { success: true, mappings: db.urlMappings || [] });
   }
 
@@ -348,7 +348,7 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 400, { success: false, message: '缺少必要参数: name, remotePattern, localFilePath' });
     }
 
-    const db = readFullDatabase(parsedUrl.searchParams.get('projectId') || (body && body.projectId) || 'default');
+    const db = readFullDatabase(parsedUrl.searchParams.get('projectId') || (typeof body !== 'undefined' && body && body.projectId) || 'default');
     if (!Array.isArray(db.urlMappings)) db.urlMappings = [];
     const index = db.urlMappings.findIndex(m => m.remotePattern === remotePattern);
     const newMapping = {

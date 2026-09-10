@@ -10,6 +10,7 @@ const SNAPSHOTS_DIR = path.join(DATA_DIR, "snapshots");
 const ARCHIVE_FILE = path.join(DATA_DIR, "feedback_archive.json");
 const PREFERENCES_FILE = path.join(DATA_DIR, "feedback_user_preferences.json");
 
+const CURRENT_PROJECT_ID = process.env.PROJECT_ID || 'o2o-shipping';
 const DEFAULT_REMOTE_SERVER_URL = process.env.REMOTE_SERVER_URL || process.env.FEEDBACK_REMOTE_URL || "http://your-server-ip:port";
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -125,9 +126,9 @@ function getFeedbackOrigin(record) {
   };
 }
 
-function getDbFileByProjectId(projectId = 'default') {
-  const cleanId = String(projectId || 'default').toLowerCase().replace(/[^a-z0-9_-]/g, '-');
-  if (cleanId === 'default' || cleanId === 'zhengjie-hrm' || cleanId === 'zhengjie') {
+function getDbFileByProjectId(projectId = CURRENT_PROJECT_ID) {
+  const cleanId = String(projectId || CURRENT_PROJECT_ID || 'default').toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+  if (cleanId === CURRENT_PROJECT_ID || cleanId === 'default') {
     return DB_FILE;
   }
   const isoFile = path.join(DATA_DIR, `feedback_database_${cleanId}.json`);
@@ -358,6 +359,7 @@ async function ensureLocalSnapshotDownloaded(feedbackId, remoteServerUrl = DEFAU
  * 提交变更时同步推送：仅在 MCP 提交解决方案、结案或录入指导意见时，才精准向远程云端服务器回推并触发刷新
  */
 async function pushRealtimeToRemote(endpoint, body, remoteServerUrl = DEFAULT_REMOTE_SERVER_URL) {
+  if (body && typeof body === 'object' && !body.projectId) body.projectId = CURRENT_PROJECT_ID;
   try {
     const base = (remoteServerUrl || DEFAULT_REMOTE_SERVER_URL).replace(/\/$/, "");
     const targetUrl = `${base}${endpoint}`;
@@ -450,7 +452,7 @@ async function getFeedback(args = {}, remoteServerUrl = DEFAULT_REMOTE_SERVER_UR
     // 尝试向云端实时查询
     try {
       const base = remoteServerUrl.replace(/\/$/, "");
-      const res = await requestHttp(`${base}/api/feedback/list?t=${Date.now()}`);
+      const res = await requestHttp(`${base}/api/feedback/list?projectId=${encodeURIComponent(args.project_id || CURRENT_PROJECT_ID)}&t=${Date.now()}`);
       if (res.statusCode === 200) {
         const json = JSON.parse(res.text);
         if (json && json.success && Array.isArray(json.data)) {

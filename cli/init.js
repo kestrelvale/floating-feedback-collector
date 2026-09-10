@@ -1,5 +1,19 @@
 #!/usr/bin/env node
 
+function normalizeRemoteUrl(inputUrl) {
+  if (!inputUrl) return '';
+  let str = String(inputUrl).trim().replace(/\/+$/, '');
+  if (!str.startsWith('http://') && !str.startsWith('https://')) {
+    if (/^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|localhost)(:\d+)?(\/.*)?$/i.test(str)) {
+      str = 'http://' + str;
+    } else {
+      str = 'https://' + str;
+    }
+  }
+  return str;
+}
+
+
 /**
  * 悬浮问题反馈收集器 · 自动化初始化向导 CLI
  * 支持模式：
@@ -48,6 +62,10 @@ function parseArgs() {
     if (arg.startsWith('--target=')) options.targetDir = arg.split('=')[1];
     if (arg.startsWith('--port=')) options.port = parseInt(arg.split('=')[1], 10);
     if (arg.startsWith('--remote-url=')) options.remoteServerUrl = arg.split('=')[1];
+    if (arg.startsWith('--online-url=')) options.remoteServerUrl = arg.split('=')[1];
+    if (arg.startsWith('--project-key=')) options.projectKey = arg.split('=')[1];
+    if (arg.startsWith('--project-id=')) options.projectKey = arg.split('=')[1];
+    if (arg.startsWith('--project-name=')) options.projectName = arg.split('=')[1];
     if (arg === '--inject') options.injectHtml = true;
     if (arg === '--no-inject') options.injectHtml = false;
     if (arg === '--mcp') options.setupMcp = true;
@@ -66,7 +84,7 @@ async function run() {
 
   let mode = cliArgs.mode;
   let port = cliArgs.port || 8888;
-  let remoteServerUrl = cliArgs.remoteServerUrl || 'http://localhost:8888';
+  let remoteServerUrl = normalizeRemoteUrl(cliArgs.remoteServerUrl || '');
   let injectHtml = cliArgs.injectHtml;
   let setupMcp = cliArgs.setupMcp;
 
@@ -133,6 +151,7 @@ async function run() {
   const resolvedTargetDir = path.resolve(process.cwd(), targetDir);
   let projectName = path.basename(resolvedTargetDir);
   let projectId = projectName.toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+  let projectKey = projectId;
   const pkgPath = path.join(targetDir, 'package.json');
   if (fs.existsSync(pkgPath)) {
     try {
@@ -143,6 +162,9 @@ async function run() {
       }
     } catch(e) {}
   }
+
+  if (cliArgs.projectKey) projectId = cliArgs.projectKey.toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+  if (cliArgs.projectName) projectName = cliArgs.projectName;
 
   // 自动扫描当前项目的 HTML / 核心入口建立专属初始映射
   const projectMappings = [];
@@ -211,11 +233,17 @@ async function run() {
     collectorJs = collectorJs.replace(/const DEFAULT_REMOTE_URL = .*;/, `const DEFAULT_REMOTE_URL = 'http://127.0.0.1:${port}';`);
     collectorJs = collectorJs.replace(/const RUNTIME_MODE = .*;/, `const RUNTIME_MODE = 'local';`);
   } else if (mode === 'online') {
-    collectorJs = collectorJs.replace(/const DEFAULT_REMOTE_URL = .*;/, `const DEFAULT_REMOTE_URL = '${remoteServerUrl}';`);
+    const normalizedRemote = normalizeRemoteUrl(remoteServerUrl);
+    collectorJs = collectorJs.replace(/const DEFAULT_REMOTE_URL = .*;/, `const DEFAULT_REMOTE_URL = '${normalizedRemote}';`);
+    collectorJs = collectorJs.replace(/const PROJECT_KEY = .*;/, `const PROJECT_KEY = '${projectKey}';`);
+    collectorJs = collectorJs.replace(/const PROJECT_NAME = .*;/, `const PROJECT_NAME = '${projectName}';`);
     collectorJs = collectorJs.replace(/const RUNTIME_MODE = .*;/, `const RUNTIME_MODE = 'online';`);
   } else {
     // hybrid
-    collectorJs = collectorJs.replace(/const DEFAULT_REMOTE_URL = .*;/, `const DEFAULT_REMOTE_URL = '${remoteServerUrl}';`);
+    const normalizedRemote = normalizeRemoteUrl(remoteServerUrl);
+    collectorJs = collectorJs.replace(/const DEFAULT_REMOTE_URL = .*;/, `const DEFAULT_REMOTE_URL = '${normalizedRemote}';`);
+    collectorJs = collectorJs.replace(/const PROJECT_KEY = .*;/, `const PROJECT_KEY = '${projectKey}';`);
+    collectorJs = collectorJs.replace(/const PROJECT_NAME = .*;/, `const PROJECT_NAME = '${projectName}';`);
     collectorJs = collectorJs.replace(/const RUNTIME_MODE = .*;/, `const RUNTIME_MODE = 'hybrid';`);
   }
 
@@ -313,7 +341,8 @@ async function run() {
           command: "node",
           args: [path.join(targetDir, "mcp/feedback-mcp-server.js")],
           env: {
-            REMOTE_SERVER_URL: mode === 'local' ? `http://127.0.0.1:${port}` : remoteServerUrl
+            REMOTE_SERVER_URL: mode === 'local' ? `http://127.0.0.1:${port}` : remoteServerUrl,
+            PROJECT_ID: projectId
           }
         }
       }

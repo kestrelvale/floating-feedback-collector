@@ -2140,11 +2140,7 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
       const res = await fetch(baseUrl + '/api/feedback/engineer-note', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            feedback_id: id,
-            engineer_note: note,
-            engineer_author: '工程师'
-          })
+          body: JSON.stringify({ projectId: CURRENT_PROJECT_ID, feedback_id: id, engineer_note: note, engineer_author: '工程师' })
         });
         const data = await res.json();
         if (data && data.success && data.persisted === true) {
@@ -2221,6 +2217,8 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
       }
     };
 
+    const CURRENT_PROJECT_ID = 'default';
+    const CURRENT_PROJECT_NAME = 'default';
     let currentDashboardMode = (window.location.hostname.includes('your-server-ip') || !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1')) ? 'online' : 'online';
     let autoRefreshActive = true;
     let autoRefreshTimer = null;
@@ -3082,7 +3080,7 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
         const res = await fetch(baseUrl + '/api/feedback/unresolve', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ feedback_id: id })
+          body: JSON.stringify({ projectId: CURRENT_PROJECT_ID, feedback_id: id })
         });
         const data = await res.json();
         if (data && data.success) {
@@ -3149,7 +3147,7 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
         await fetch(baseUrl + '/api/feedback/trash', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ feedback_id: id })
+          body: JSON.stringify({ projectId: CURRENT_PROJECT_ID, feedback_id: id })
         });
       } catch(e) {
         console.warn('服务端移入回收站接口响应:', e.message);
@@ -3188,7 +3186,7 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
         await fetch(baseUrl + '/api/feedback/restore', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ feedback_id: id })
+          body: JSON.stringify({ projectId: CURRENT_PROJECT_ID, feedback_id: id })
         });
       } catch(e) {
         console.warn('服务端恢复接口响应:', e.message);
