@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>正杰全球聘 · 原型反馈与 Agent 闭环排障中枢</title>
+  <title>原型反馈与 Agent 闭环排障中枢</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐞</text></svg>">
   <style>
     :root {
@@ -1211,7 +1211,7 @@
         <div class="brand-icon">🐞</div>
         <div class="brand-text">
           <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-            <h1 style="margin:0;">正杰全球聘 · 原型反馈与 Agent 闭环排障中枢</h1>
+            <h1 style="margin:0;" id="main-project-title">原型反馈与 Agent 闭环排障中枢</h1>
             <span style="background:#10b981; color:#fff; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px;">V5.3 纯净生产版</span>
           </div>
           <p style="margin-top:4px;">多端真实快照 | 操作轨迹与系统诊断 | 智能生成 MCP 修复 Prompt | 提交时同步 · 打开中枢时对齐云端</p>
@@ -1295,7 +1295,7 @@
     <!-- 1. 一级：端决策中枢头部 (由小到大排序 + 重置筛选) -->
     <div class="hub-header">
       <div class="hub-header-left">
-        <span class="hub-main-title">📱 五端排障中枢与层级下钻透视</span>
+        <span class="hub-main-title" id="terminal-hub-title">📱 项目多端排障中枢与层级下钻透视</span>
         <span class="hub-sort-desc">(各端按待解决缺陷数 <strong id="tcc-sort-desc-text">由小到大 ⬆️</strong> 自动排列)</span>
         <div class="tcc-sort-toggle">
           <button class="tcc-sort-btn active" id="btn-sort-asc" onclick="setTerminalSort('asc')" title="由小到大排列 (待处理少 ➔ 多)">由小到大 ⬆️</button>
@@ -2286,20 +2286,20 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
     async function loadFeedbackData(forceRender = false) {
       try {
         const isFile = window.location.protocol === 'file:';
-        const localApiUrl = isFile ? `http://127.0.0.1:8888/api/feedback/list?includeTrash=true&t=${Date.now()}` : `/api/feedback/list?includeTrash=true&t=${Date.now()}`;
-        const onlineApiUrl = `http://your-server-ip:port/api/feedback/list?includeTrash=true&t=${Date.now()}`;
+        const localApiUrl = isFile ? `http://127.0.0.1:8888/api/feedback/list?projectId=${CURRENT_PROJECT_ID}&includeTrash=true&t=${Date.now()}` : `/api/feedback/list?projectId=${CURRENT_PROJECT_ID}&includeTrash=true&t=${Date.now()}`;
+        const onlineApiUrl = `http://your-server-ip:port/api/feedback/list?projectId=${CURRENT_PROJECT_ID}&includeTrash=true&t=${Date.now()}`;
 
         const isOnline = (currentDashboardMode === 'online');
         const isAlreadyOnCloud = window.location.hostname.includes('your-server-ip') || window.location.port === '23333';
         const isLocalHost = window.location.port === '8888';
 
         const cloudUrl = isAlreadyOnCloud 
-          ? `/api/feedback/list?includeTrash=true&t=${Date.now()}` 
-          : `http://your-server-ip:port/api/feedback/list?includeTrash=true&t=${Date.now()}`;
+          ? `/api/feedback/list?projectId=${CURRENT_PROJECT_ID}&includeTrash=true&t=${Date.now()}` 
+          : `http://your-server-ip:port/api/feedback/list?projectId=${CURRENT_PROJECT_ID}&includeTrash=true&t=${Date.now()}`;
 
         const localUrl = isLocalHost 
-          ? `/api/feedback/list?includeTrash=true&t=${Date.now()}` 
-          : `http://127.0.0.1:8888/api/feedback/list?includeTrash=true&t=${Date.now()}`;
+          ? `/api/feedback/list?projectId=${CURRENT_PROJECT_ID}&includeTrash=true&t=${Date.now()}` 
+          : `http://127.0.0.1:8888/api/feedback/list?projectId=${CURRENT_PROJECT_ID}&includeTrash=true&t=${Date.now()}`;
 
         let targetUrl = isOnline ? cloudUrl : localUrl;
 

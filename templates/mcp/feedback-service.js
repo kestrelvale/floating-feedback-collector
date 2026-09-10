@@ -125,9 +125,33 @@ function getFeedbackOrigin(record) {
   };
 }
 
-function readFullDatabase() {
+function getDbFileByProjectId(projectId = 'default') {
+  const cleanId = String(projectId || 'default').toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+  if (cleanId === 'default' || cleanId === 'zhengjie-hrm' || cleanId === 'zhengjie') {
+    return DB_FILE;
+  }
+  const isoFile = path.join(DATA_DIR, `feedback_database_${cleanId}.json`);
+  if (!fs.existsSync(isoFile)) {
+    const seed = {
+      version: "3.2.0",
+      projectId: cleanId,
+      projectName: cleanId,
+      dataVersion: Date.now(),
+      updatedAt: new Date().toISOString(),
+      feedbacks: [],
+      urlMappings: [],
+      submissionLogs: [],
+      trashBin: []
+    };
+    try { fs.writeFileSync(isoFile, JSON.stringify(seed, null, 2), "utf-8"); } catch(e) {}
+  }
+  return isoFile;
+}
+
+function readFullDatabase(projectId = 'default') {
+  const targetFile = getDbFileByProjectId(projectId);
   try {
-    const raw = fs.readFileSync(DB_FILE, "utf-8");
+    const raw = fs.readFileSync(targetFile, "utf-8");
     const db = JSON.parse(raw || "{}");
     if (Array.isArray(db)) {
       return {
@@ -177,7 +201,8 @@ function writeFullDatabase(db) {
   try {
     db.dataVersion = Date.now();
     db.updatedAt = new Date().toISOString();
-    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf-8");
+    const targetFile = getDbFileByProjectId(db.projectId || "default");
+    fs.writeFileSync(targetFile, JSON.stringify(db, null, 2), "utf-8");
     return true;
   } catch (e) {
     return false;

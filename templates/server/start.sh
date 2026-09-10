@@ -20,7 +20,7 @@ fi
 
 python3 -c "
 import subprocess
-p = subprocess.Popen(['node', '$DIR/server.js'], stdout=open('$LOG_FILE', 'w'), stderr=subprocess.STDOUT, start_new_session=True)
+p = subprocess.Popen(['node', '$DIR/server.js'], stdin=subprocess.DEVNULL, stdout=open('$LOG_FILE', 'a'), stderr=subprocess.STDOUT, start_new_session=True)
 with open('$PID_FILE', 'w') as f:
     f.write(str(p.pid))
 with open('$ROOT_DIR/server.pid', 'w') as f:

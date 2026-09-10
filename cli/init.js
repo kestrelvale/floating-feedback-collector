@@ -129,27 +129,78 @@ async function run() {
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   });
 
-  // 2. 初始化 V3.2 4表统一数据底座 (feedbacks, urlMappings, submissionLogs, trashBin)
+  // 2. 智能识别当前项目身份 (Project Identity Isolation)
+  const resolvedTargetDir = path.resolve(process.cwd(), targetDir);
+  let projectName = path.basename(resolvedTargetDir);
+  let projectId = projectName.toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+  const pkgPath = path.join(targetDir, 'package.json');
+  if (fs.existsSync(pkgPath)) {
+    try {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+      if (pkg.name) {
+        projectName = pkg.name;
+        projectId = pkg.name.toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+      }
+    } catch(e) {}
+  }
+
+  // 自动扫描当前项目的 HTML / 核心入口建立专属初始映射
+  const projectMappings = [];
+  try {
+    function findHtmlFiles(dir, depth = 0) {
+      if (depth > 3) return;
+      const list = fs.readdirSync(dir, { withFileTypes: true });
+      for (const item of list) {
+        if (item.name.startsWith('.') || item.name === 'node_modules' || item.name === 'dist' || item.name === 'build' || item.name === 'packages') continue;
+        const p = path.join(dir, item.name);
+        if (item.isDirectory()) {
+          findHtmlFiles(p, depth + 1);
+        } else if (item.isFile() && item.name.endsWith('.html') && item.name !== 'feedback-dashboard.html') {
+          const rel = path.relative(targetDir, p).replace(/\\/g, '/');
+          const terminalGuess = rel.includes('/') ? rel.split('/')[0] : '默认端';
+          projectMappings.push({
+            id: `MAP-${String(projectMappings.length + 1).padStart(3, '0')}`,
+            name: item.name.replace('.html', ''),
+            terminal: terminalGuess,
+            remotePattern: `**/${item.name}*`,
+            localFilePath: rel,
+            priority: 100,
+            isAutoLearned: true
+          });
+        }
+      }
+    }
+    findHtmlFiles(targetDir);
+  } catch(e) {}
+
+  if (projectMappings.length === 0) {
+    projectMappings.push({
+      id: "MAP-001",
+      name: "主入口页面",
+      terminal: "默认端",
+      remotePattern: "**/index.html*",
+      localFilePath: "index.html",
+      priority: 90,
+      isAutoLearned: false
+    });
+  }
+
+  // 初始化专属独立四表数据底座 (feedbacks 必须为纯净空列表，绝不夹带任何旧项目数据)
   const dbFile = path.join(dataDir, 'feedback_database.json');
   if (!fs.existsSync(dbFile)) {
     const seedDb = {
       version: "3.2.0",
+      projectId: projectId,
+      projectName: projectName,
       dataVersion: Date.now(),
       updatedAt: new Date().toISOString(),
       feedbacks: [],
-      urlMappings: [
-        { id: "MAP-001", name: "移动端/小程序端", terminal: "移动端", remotePattern: "**/q-wechat-app.html*", localFilePath: "求职者小程序端/q-wechat-app.html", priority: 100, isAutoLearned: false },
-        { id: "MAP-002", name: "经纪人端", terminal: "经纪人端", remotePattern: "**/c-wechat-app.html*", localFilePath: "C端人才经纪人小程序端/c-wechat-app.html", priority: 100, isAutoLearned: false },
-        { id: "MAP-003", name: "企业移动端", terminal: "企业移动端", remotePattern: "**/b-wechat-app.html*", localFilePath: "B端企业小程序端/b-wechat-app.html", priority: 100, isAutoLearned: false },
-        { id: "MAP-004", name: "Web管理后台", terminal: "Web管理端", remotePattern: "**/b-web-admin.html*", localFilePath: "B端企业端-Web管理后台/b-web-admin.html", priority: 100, isAutoLearned: false },
-        { id: "MAP-005", name: "运营端", terminal: "运营中台", remotePattern: "**/op-web-app.html*", localFilePath: "平台运营端/op-web-app.html", priority: 100, isAutoLearned: false },
-        { id: "MAP-006", name: "系统入口大厅", terminal: "入口大厅", remotePattern: "**/index.html*", localFilePath: "index.html", priority: 90, isAutoLearned: false }
-      ],
+      urlMappings: projectMappings,
       submissionLogs: [],
       trashBin: []
     };
     fs.writeFileSync(dbFile, JSON.stringify(seedDb, null, 2), 'utf-8');
-    console.log(`  ${c.green}✓${c.reset} 初始化 V3.2 四表统一数据底座: data/feedback_database.json`);
+    console.log(`  ${c.green}✓${c.reset} 初始化专属纯净四表数据底座: data/feedback_database.json (项目: ${c.bright}${projectName}${c.reset}, 初始映射: ${projectMappings.length}条)`);
   }
 
   // 3. 生成定制化的 feedback-collector.js
@@ -172,8 +223,12 @@ async function run() {
   fs.copyFileSync(path.join(templatesDir, 'client/html2canvas.min.js'), path.join(targetDir, 'html2canvas.min.js'));
   console.log(`  ${c.green}✓${c.reset} 复制前端 SDK: feedback-collector.js & html2canvas.min.js`);
 
-  // 4. 复制并定制 Dashboard
+  // 4. 复制并定制 Dashboard (注入当前项目的专属名称与 projectId)
   let dashboardHtml = fs.readFileSync(path.join(templatesDir, 'dashboard/feedback-dashboard.html'), 'utf-8');
+  dashboardHtml = dashboardHtml.replace(/<title>.*<\/title>/, `<title>${projectName} · 原型反馈与 Agent 闭环排障中枢</title>`);
+  dashboardHtml = dashboardHtml.replace(/<h1 style="margin:0;">.*<\/h1>/, `<h1 style="margin:0;">${projectName} · 原型反馈与 Agent 闭环排障中枢</h1>`);
+  dashboardHtml = dashboardHtml.replace(/const CURRENT_PROJECT_ID = .*;/, `const CURRENT_PROJECT_ID = '${projectId}';`);
+  dashboardHtml = dashboardHtml.replace(/const CURRENT_PROJECT_NAME = .*;/, `const CURRENT_PROJECT_NAME = '${projectName}';`);
   let remoteHost = "your-server-ip";
   try { remoteHost = new URL(remoteServerUrl).hostname; } catch(e) {}
   dashboardHtml = dashboardHtml
