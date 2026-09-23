@@ -1422,7 +1422,7 @@
       </div>
       <div>
         <label style="font-size:12.5px; font-weight:600; color:var(--text-muted); display:block; margin-bottom:6px;">涉及修改的文件 (多行或逗号分隔)</label>
-        <input type="text" id="resolve-files" style="width:100%; background:#090e1a; border:1px solid var(--border-subtle); border-radius:8px; padding:8px 10px; color:#fff; font-size:12.5px; outline:none;" placeholder="如：求职者小程序端/q-wechat-app.html">
+        <input type="text" id="resolve-files" style="width:100%; background:#090e1a; border:1px solid var(--border-subtle); border-radius:8px; padding:8px 10px; color:#fff; font-size:12.5px; outline:none;" placeholder="如：o2o/taobao-flash-sale-browser-extension/review.html">
       </div>
       <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:8px;">
         <button class="btn btn-outline" id="btn-cancel-resolve">取消</button>
@@ -1441,60 +1441,43 @@
 
     
     // =========================================================================
-    // 🌟 五端排障中枢与模块分布状态机 (置顶 · 由小到大排列)
+    // 🌟 多端排障中枢与模块分布状态机 (置顶 · 由小到大排列)
     // =========================================================================
     let terminalSortOrder = 'asc'; // 'asc' (由小到大，默认) | 'desc' (由大到小)
-    let selectedTerminalKey = 'all'; // 'all' | 'b-web' | 'op-web' | 'b-app' | 'c-app' | 'q-app'
+    let selectedTerminalKey = 'all'; // 'all' | <CANONICAL_TERMINALS 里任意 key>
     let selectedModuleKey = 'all'; // 'all' | specific module name
     let selectedLifecycle = 'all'; // 'all' | 'defect' | 'pending_deploy' | 'deployed'
 
-    const CANONICAL_TERMINALS = [
-      { key: 'b-web', name: 'B端Web管理后台', icon: '🖥️', short: '企业Web' },
-      { key: 'op-web', name: '平台运营管理端', icon: '⚙️', short: '运营端' },
-      { key: 'b-app', name: 'B端企业小程序端', icon: '🏢', short: '企业小程序' },
-      { key: 'c-app', name: 'C端人才经纪人端', icon: '💼', short: '经纪人端' },
-      { key: 'q-app', name: '求职者小程序端', icon: '📱', short: '求职端' }
+    // 🧩 端（平台）怎么分由项目自己决定：套件只内置通用的 Web / H5 / 小程序三类默认值。
+    //    接入方可用 init 的 --platforms 参数定制，也可直接改写本数组（key 唯一即可）。
+    //    match 仅用于把历史工单归到某个端，不含任何具体项目的业务信息。
+    let CANONICAL_TERMINALS = [
+      { key: 'web', name: 'Web 端', icon: '🖥️', short: 'Web', match: ['web', 'admin', '后台', 'desktop'] },
+      { key: 'h5', name: 'H5 端', icon: '📱', short: 'H5', match: ['h5', 'mobile', '手机', 'm/'] },
+      { key: 'miniprogram', name: '小程序端', icon: '🏢', short: '小程序', match: ['miniprogram', '小程序', 'wechat', 'weapp', 'mp-'] }
     ];
 
+    // 工单归端：① 显式声明的 terminal 字段优先 ② 配置里的 match 关键词兜底 ③ 落到第一个端
     function getRecordTerminal(r) {
-      if (!r) return CANONICAL_TERMINALS[1];
+      if (!r) return CANONICAL_TERMINALS[0];
+      const explicit = r.terminal || r.terminalKey || r.platform;
+      if (explicit) {
+        const hit = CANONICAL_TERMINALS.find(t => t.key === explicit);
+        if (hit) return hit;
+      }
       const text = ((r.pagePath || '') + ' ' + (r.pageTitle || '') + ' ' + (r.url || '') + ' ' + (r.pageRoute || '')).toLowerCase();
-      if (text.includes('q-wechat-app') || text.includes('求职') || text.includes('q_app')) {
-        return CANONICAL_TERMINALS[4];
+      for (const t of CANONICAL_TERMINALS) {
+        const keys = t.match || [];
+        if (keys.some(k => text.includes(String(k).toLowerCase()))) return t;
       }
-      if (text.includes('c-wechat-app') || text.includes('经纪人') || text.includes('c_app')) {
-        return CANONICAL_TERMINALS[3];
-      }
-      if (text.includes('b-wechat-app') || text.includes('企业小程序') || text.includes('企业雇主小程序') || text.includes('b_app')) {
-        return CANONICAL_TERMINALS[2];
-      }
-      if (text.includes('b-web') || text.includes('企业端-web') || text.includes('企业web') || text.includes('管理后台')) {
-        return CANONICAL_TERMINALS[0];
-      }
-      return CANONICAL_TERMINALS[1];
+      return CANONICAL_TERMINALS[0];
     }
 
     function getRecordModule(r) {
       if (!r) return { key: 'default', name: '默认主视图', raw: '' };
       const mod = r.activeModuleLabel || r.activeModule || '';
-      const route = r.pageRoute || r.pagePath || '';
-      const combined = (mod + ' ' + route).toLowerCase();
-
-      if (combined.includes('shop') || combined.includes('好店')) return { key: 'shop', name: '金牌严选好店', raw: mod };
-      if (combined.includes('agentauth') || combined.includes('授权')) return { key: 'agent_auth', name: '经纪人授权管理', raw: mod };
-      if (combined.includes('apply') || combined.includes('投递') || combined.includes('interview')) return { key: 'apply', name: '投递与约面', raw: mod };
-      if (combined.includes('message') || combined.includes('消息') || combined.includes('chat')) return { key: 'message', name: '消息与在线微聊', raw: mod };
-      if (combined.includes('resume') || combined.includes('微简历')) return { key: 'resume', name: '微简历中心', raw: mod };
-      if (combined.includes('viewhome') || combined.includes('tabhome') || combined.includes('首页') || combined.includes('工作台')) return { key: 'home', name: '工作台/首页', raw: mod };
-      if (combined.includes('talent') || combined.includes('公海')) return { key: 'talents', name: '私域人才库与推单', raw: mod };
-      if (combined.includes('square') || combined.includes('广场') || combined.includes('抢单')) return { key: 'square', name: '抢单广场', raw: mod };
-      if (combined.includes('tabme') || combined.includes('我的') || combined.includes('钱包') || combined.includes('佣金')) return { key: 'me', name: '我的与佣金资产', raw: mod };
-      if (combined.includes('finance') || combined.includes('充值') || combined.includes('资金')) return { key: 'finance', name: '资金充值与账户', raw: mod };
-      if (combined.includes('p-05') || combined.includes('订单')) return { key: 'p05_order', name: '订单履约与结算', raw: mod };
-      if (combined.includes('p-03') || combined.includes('违规') || combined.includes('处罚')) return { key: 'p03_vio', name: '风控与违规处理', raw: mod };
-      if (combined.includes('p-04') || combined.includes('简历池')) return { key: 'p04_pool', name: '平台简历池调度', raw: mod };
-      if (combined.includes('p-06') || combined.includes('资金池')) return { key: 'p06_funds', name: '资金总览与审核', raw: mod };
-      if (combined.includes('p-01') || combined.includes('p-02') || combined.includes('企业管理')) return { key: 'p01_ent', name: '客户与企业管理', raw: mod };
+      if (!mod) return { key: 'general', name: '常规视图', raw: '' };
+      return { key: mod.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fa5]/g, '_'), name: mod, raw: mod };
       if (mod) return { key: mod.toLowerCase().replace(/[^a-z0-9]/g, '_'), name: mod, raw: mod };
       return { key: 'general', name: '常规视图', raw: '' };
     }
@@ -1812,13 +1795,15 @@
       search: ''
     };
     
+    // 项目专属存储前缀（由 CLI 初始化注入），避免多项目共用浏览器时互相串数据
+    const STORAGE_PREFIX = 'fb';
+
     const LOCAL_STORAGE_KEYS = [
-      'zhengjie_hrm_feedback_logs_v1',
-      'zhengjie_feedback_records_v1',
-      'zhengjie_feedback_records',
-      'zj_feedback_records'
+      STORAGE_PREFIX + '_feedback_logs_v1',
+      STORAGE_PREFIX + '_feedback_records_v1',
+      STORAGE_PREFIX + '_feedback_records'
     ];
-    const ENGINEER_DRAFT_STORAGE_PREFIX = 'zhengjie_hrm_engineer_note_draft_v1:';
+    const ENGINEER_DRAFT_STORAGE_PREFIX = STORAGE_PREFIX + '_engineer_note_draft_v1:';
 
     function getEngineerDraft(id) {
       try {
@@ -2057,7 +2042,7 @@
 1. 【不传服务器】：本地启动的服务和反馈的问题，不用传到服务器；
 2. 【本地闭环】：直接在本地数据库标记已解决（sync_to_remote: false），完全本地自闭环。`;
 
-      return `请帮我针对正杰全球聘原型系统排查并修复以下用户反馈的缺陷：
+      return `请帮我针对【${(typeof CURRENT_PROJECT_NAME !== 'undefined' && CURRENT_PROJECT_NAME) || '本项目'}】原型系统排查并修复以下用户反馈的缺陷：
 
 【缺陷编号】: \`${r.id}\`
 【优先级/严重度】: ${r.severity || 'P2'} (${r.typeLabel || '问题反馈'})
@@ -3268,7 +3253,7 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
         alert('暂无数据可导出');
         return;
       }
-      let md = `# 正杰全球聘 · 原型反馈与 Agent 排障清单\n\n> 导出时间: ${new Date().toLocaleString()} | 累计反馈数: ${allRecords.length} 条\n\n`;
+      let md = `# ${CURRENT_PROJECT_NAME} · 原型反馈与 Agent 排障清单\n\n> 导出时间: ${new Date().toLocaleString()} | 累计反馈数: ${allRecords.length} 条\n\n`;
       allRecords.forEach((r, i) => {
         md += `### ${i + 1}. [${r.severity || 'P2'}] ${r.title} (${r.typeLabel || '反馈'})\n`;
         md += `- **缺陷编号**: \`${r.id}\`\n`;
@@ -3285,7 +3270,7 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
       const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `正杰原型反馈清单_${Date.now()}.md`;
+      a.download = `${CURRENT_PROJECT_NAME}_原型反馈清单_${Date.now()}.md`;
       a.click();
     });
 
@@ -3298,7 +3283,7 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
       const blob = new Blob([JSON.stringify(allRecords, null, 2)], { type: 'application/json;charset=utf-8' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `正杰原型反馈数据_${Date.now()}.json`;
+      a.download = `${CURRENT_PROJECT_NAME}_原型反馈数据_${Date.now()}.json`;
       a.click();
     });
 
@@ -3355,13 +3340,12 @@ ${snapLine}${opSection}${sysSection}${engineerSection}==========================
           </tr>
         </thead>
         <tbody id="mapping-table-body">
-          <tr style="border-bottom:1px solid rgba(148,163,184,0.1);"><td style="padding:8px; font-family:monospace; color:#64748b;">MAP-001</td><td style="padding:8px; font-weight:600;">求职者小程序端</td><td style="padding:8px; font-family:monospace; color:#818cf8;">**/q-wechat-app.html*</td><td style="padding:8px; font-family:monospace; color:#38bdf8;">求职者小程序端/q-wechat-app.html</td></tr>
-          <tr style="border-bottom:1px solid rgba(148,163,184,0.1);"><td style="padding:8px; font-family:monospace; color:#64748b;">MAP-002</td><td style="padding:8px; font-weight:600;">C端人才经纪人端</td><td style="padding:8px; font-family:monospace; color:#818cf8;">**/c-wechat-app.html*</td><td style="padding:8px; font-family:monospace; color:#38bdf8;">C端人才经纪人小程序端/c-wechat-app.html</td></tr>
-          <tr style="border-bottom:1px solid rgba(148,163,184,0.1);"><td style="padding:8px; font-family:monospace; color:#64748b;">MAP-003</td><td style="padding:8px; font-weight:600;">B端企业小程序端</td><td style="padding:8px; font-family:monospace; color:#818cf8;">**/b-wechat-app.html*</td><td style="padding:8px; font-family:monospace; color:#38bdf8;">B端企业小程序端/b-wechat-app.html</td></tr>
-          <tr style="border-bottom:1px solid rgba(148,163,184,0.1);"><td style="padding:8px; font-family:monospace; color:#64748b;">MAP-004</td><td style="padding:8px; font-weight:600;">B端企业Web管理后台</td><td style="padding:8px; font-family:monospace; color:#818cf8;">**/b-web-admin.html*</td><td style="padding:8px; font-family:monospace; color:#38bdf8;">zhengjiehrm-发布版-20260828/B端企业端-Web管理后台/b-web-admin.html</td></tr>
-          <tr style="border-bottom:1px solid rgba(148,163,184,0.1);"><td style="padding:8px; font-family:monospace; color:#64748b;">MAP-005</td><td style="padding:8px; font-weight:600;">平台运营端</td><td style="padding:8px; font-family:monospace; color:#818cf8;">**/op-web-app.html*</td><td style="padding:8px; font-family:monospace; color:#38bdf8;">平台运营端/op-web-app.html</td></tr>
-          <tr style="border-bottom:1px solid rgba(148,163,184,0.1);"><td style="padding:8px; font-family:monospace; color:#64748b;">MAP-006</td><td style="padding:8px; font-weight:600;">五端演示中心大厅</td><td style="padding:8px; font-family:monospace; color:#818cf8;">**/index.html*</td><td style="padding:8px; font-family:monospace; color:#38bdf8;">index.html</td></tr>
-          <tr style="border-bottom:1px solid rgba(148,163,184,0.1);"><td style="padding:8px; font-family:monospace; color:#64748b;">MAP-007</td><td style="padding:8px; font-weight:600;">内部全量验收大厅</td><td style="padding:8px; font-family:monospace; color:#818cf8;">**/checking*</td><td style="padding:8px; font-family:monospace; color:#38bdf8;">checking/index.html</td></tr>
+          <tr style="border-bottom:1px solid rgba(148,163,184,0.1);"><td style="padding:8px; font-family:monospace; color:#64748b;">MAP-001</td><td style="padding:8px; font-weight:600;">秒杀扩展·审核工作台</td><td style="padding:8px; font-family:monospace; color:#818cf8;">**/review.html*</td><td style="padding:8px; font-family:monospace; color:#38bdf8;">o2o/taobao-flash-sale-browser-extension/review.html</td></tr>
+          <tr style="border-bottom:1px solid rgba(148,163,184,0.1);"><td style="padding:8px; font-family:monospace; color:#64748b;">MAP-002</td><td style="padding:8px; font-weight:600;">秒杀扩展·弹窗界面</td><td style="padding:8px; font-family:monospace; color:#818cf8;">**/popup.html*</td><td style="padding:8px; font-family:monospace; color:#38bdf8;">o2o/taobao-flash-sale-browser-extension/popup.html</td></tr>
+          <tr style="border-bottom:1px solid rgba(148,163,184,0.1);"><td style="padding:8px; font-family:monospace; color:#64748b;">MAP-003</td><td style="padding:8px; font-weight:600;">秒杀扩展·配置选项</td><td style="padding:8px; font-family:monospace; color:#818cf8;">**/options.html*</td><td style="padding:8px; font-family:monospace; color:#38bdf8;">o2o/taobao-flash-sale-browser-extension/options.html</td></tr>
+          <tr style="border-bottom:1px solid rgba(148,163,184,0.1);"><td style="padding:8px; font-family:monospace; color:#64748b;">MAP-004</td><td style="padding:8px; font-weight:600;">前端分类测试页</td><td style="padding:8px; font-family:monospace; color:#818cf8;">**/test_category.html*</td><td style="padding:8px; font-family:monospace; color:#38bdf8;">test_category.html</td></tr>
+          <tr style="border-bottom:1px solid rgba(148,163,184,0.1);"><td style="padding:8px; font-family:monospace; color:#64748b;">MAP-005</td><td style="padding:8px; font-weight:600;">页面渲染测试页</td><td style="padding:8px; font-family:monospace; color:#818cf8;">**/test_render.html*</td><td style="padding:8px; font-family:monospace; color:#38bdf8;">test_render.html</td></tr>
+          <tr style="border-bottom:1px solid rgba(148,163,184,0.1);"><td style="padding:8px; font-family:monospace; color:#64748b;">MAP-006</td><td style="padding:8px; font-weight:600;">营销促销测试页</td><td style="padding:8px; font-family:monospace; color:#818cf8;">**/test_render_promo.html*</td><td style="padding:8px; font-family:monospace; color:#38bdf8;">test_render_promo.html</td></tr>
         </tbody>
       </table>
     </div>

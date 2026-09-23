@@ -10,7 +10,7 @@ const SNAPSHOTS_DIR = path.join(DATA_DIR, "snapshots");
 const ARCHIVE_FILE = path.join(DATA_DIR, "feedback_archive.json");
 const PREFERENCES_FILE = path.join(DATA_DIR, "feedback_user_preferences.json");
 
-const CURRENT_PROJECT_ID = process.env.PROJECT_ID || 'o2o-shipping';
+const CURRENT_PROJECT_ID = process.env.PROJECT_ID || process.env.FEEDBACK_PROJECT_KEY || 'default';
 const DEFAULT_REMOTE_SERVER_URL = process.env.REMOTE_SERVER_URL || process.env.FEEDBACK_REMOTE_URL || "http://your-server-ip:port";
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -50,7 +50,7 @@ const DEFAULT_URL_MAPPINGS = [
     name: "B端企业Web管理后台",
     terminal: "B端Web后台",
     remotePattern: "**/b-web-admin.html*",
-    localFilePath: "zhengjiehrm-发布版-20260828/B端企业端-Web管理后台/b-web-admin.html",
+    localFilePath: "path/to/your/page.html",
     priority: 100,
     isAutoLearned: false
   },

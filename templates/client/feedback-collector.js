@@ -21,7 +21,7 @@
 
 
 /**
- * 正杰全球聘 · 全端通用悬浮问题反馈、操作日志与系统日志收集器 (Full-Stack Feedback Engine V4.4)
+ * 全端通用悬浮问题反馈、操作日志与系统日志收集器 (Full-Stack Feedback Engine V4.4)
  * 🎨 OpenDesign & Taste Skill 倾力打造：
  * 1. 🌟 全景漫游式引导 (Interactive Spotlight Walkthrough Tour)
  *    - 真实 DOM 聚焦聚光灯 (Spotlight Box-Shadow Cutout + Morphing Animation)
@@ -39,13 +39,15 @@
   // =========================================================================
   const RUNTIME_MODE = 'hybrid'; // 'local' | 'online' | 'hybrid'
   const DEFAULT_REMOTE_URL = 'http://localhost:8888';
+  const PROJECT_NAME = 'default';  // 由 CLI 初始化注入：项目业务名称
+  const STORAGE_PREFIX = 'fb';     // 由 CLI 初始化注入：项目专属存储前缀（多项目共用浏览器时不串数据）
 
-  const STORAGE_KEY = 'zhengjie_hrm_feedback_logs_v1';
-  const TOUR_KEY = 'zhengjie_fb_tour_completed_v2';
-  const CONTACT_CACHE_KEY = 'zhengjie_hrm_feedback_contact_v1';
-  const TYPE_CACHE_KEY = 'zhengjie_hrm_feedback_type_v1';
-  const SEV_CACHE_KEY = 'zhengjie_hrm_feedback_severity_v1';
-  const DRAFT_STORAGE_KEY = 'zhengjie_hrm_feedback_draft_v1';
+  const STORAGE_KEY = STORAGE_PREFIX + '_feedback_logs_v1';
+  const TOUR_KEY = STORAGE_PREFIX + '_tour_completed_v2';
+  const CONTACT_CACHE_KEY = STORAGE_PREFIX + '_feedback_contact_v1';
+  const TYPE_CACHE_KEY = STORAGE_PREFIX + '_feedback_type_v1';
+  const SEV_CACHE_KEY = STORAGE_PREFIX + '_feedback_severity_v1';
+  const DRAFT_STORAGE_KEY = STORAGE_PREFIX + '_feedback_draft_v1';
   const MAX_RING_BUFFER = 40;
 
   // =========================================================================
@@ -2068,7 +2070,7 @@
         showToast('当前暂无记录可导出');
         return;
       }
-      let md = '# 正杰全球聘 · 原型问题、操作日志与系统诊断清单\n\n> 导出时间: ' + new Date().toLocaleString() + ' | 累计反馈数: ' + list.length + ' 条\n\n';
+      let md = '# ' + (typeof PROJECT_NAME !== 'undefined' ? PROJECT_NAME : '当前项目') + ' · 原型问题、操作日志与系统诊断清单\n\n> 导出时间: ' + new Date().toLocaleString() + ' | 累计反馈数: ' + list.length + ' 条\n\n';
       list.forEach(function(item, i) {
         md += '### ' + (i + 1) + '. [' + item.severity + '] ' + item.title + ' (' + item.typeLabel + ')\n';
         md += '- **记录编号**: `' + item.id + '`\n';
@@ -2099,7 +2101,7 @@
       const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = '正杰原型问题与系统日志清单_' + Date.now() + '.md';
+      a.download = (typeof PROJECT_NAME !== 'undefined' ? PROJECT_NAME : '当前项目') + '_原型问题与系统日志清单_' + Date.now() + '.md';
       a.click();
       showToast('📋 已导出 Markdown');
     });
@@ -2113,7 +2115,7 @@
       const blob = new Blob([JSON.stringify(list, null, 2)], { type: 'application/json;charset=utf-8' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = '正杰原型反馈数据包_' + Date.now() + '.json';
+      a.download = (typeof PROJECT_NAME !== 'undefined' ? PROJECT_NAME : '当前项目') + '_原型反馈数据包_' + Date.now() + '.json';
       a.click();
       showToast('💾 已导出 JSON');
     });

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * 正杰全球聘 · 原型问题反馈与排障闭环 本地 Stdio MCP 服务端
+ * 项目问题反馈与排障闭环 本地 Stdio MCP 服务端
  */
 
 const readline = require('readline');
@@ -18,7 +18,7 @@ function startMcpServer() {
     terminal: false
   });
 
-  log('正杰全球聘 Stdio MCP 服务已就绪...');
+  log('Feedback Stdio MCP 服务已就绪...');
 
   rl.on('line', async (line) => {
     if (!line.trim()) return;

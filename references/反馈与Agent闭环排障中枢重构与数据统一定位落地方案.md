@@ -44,7 +44,7 @@
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ 🌐 线上模式 (Online Mode) —— 数据统一源: 云端服务器 (Cloud Server)                                       │
-│    • 数据存储：存储在云端服务器 /www/wwwroot/zhengjie-hrm/data/feedback_database.json 与 snapshots 目录 │
+│    • 数据存储：存储在云端服务器 /www/wwwroot/project-a/data/feedback_database.json 与 snapshots 目录 │
 │    • 反馈中台：不论部署在公网还是本地启动，均直连读取云端服务器数据                                    │
 │    • MCP 排障：Agent 在本地通过 MCP 修改工单后，毫秒级实时回推同步至云端服务器                           │
 │    • 动态热刷新：云端数据发生变更（提单/MCP结案/指导意见录入），中台实时感知并自动增量刷新 UI          │
@@ -210,7 +210,7 @@ flowchart TD
 | `MAP-001` | **求职者小程序端** | `**/q-wechat-app.html*` | `求职者小程序端/q-wechat-app.html` |
 | `MAP-002` | **C端人才经纪人端** | `**/c-wechat-app.html*` | `C端人才经纪人小程序端/c-wechat-app.html` |
 | `MAP-003` | **B端企业小程序端** | `**/b-wechat-app.html*` | `B端企业小程序端/b-wechat-app.html` |
-| `MAP-004` | **B端企业Web后台** | `**/b-web-admin.html*` | `zhengjiehrm-发布版-20260828/B端企业端-Web管理后台/b-web-admin.html` |
+| `MAP-004` | **B端企业Web后台** | `**/b-web-admin.html*` | `your-project-root/B端企业端-Web管理后台/b-web-admin.html` |
 | `MAP-005` | **平台运营端** | `**/op-web-app.html*` | `平台运营端/op-web-app.html` |
 | `MAP-006` | **五端演示大厅** | `**/index.html*` | `index.html` |
 | `MAP-007` | **内部验收大厅** | `**/checking*` | `checking/index.html` |

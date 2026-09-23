@@ -24,7 +24,7 @@ const PORT = process.env.PORT || 8888;
 
 
 const SERVER_VERSION = '3.2.0';
-const ROOT_DIR = path.resolve(__dirname, '../zhengjiehrm-发布版-20260828');
+const ROOT_DIR = process.env.FEEDBACK_ROOT_DIR || path.resolve(__dirname, '..');
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=UTF-8',
@@ -411,7 +411,7 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
   const ip = getLocalIp();
   console.log(`\n================================================================`);
-  console.log(`  🐞 正杰全球聘 · 反馈与排障中枢服务 V${SERVER_VERSION} 已启动`);
+  console.log(`  🐞 多端排障中枢 · 反馈与排障中枢服务 V${SERVER_VERSION} 已启动`);
   console.log(`  • 本地中台地址: http://127.0.0.1:${PORT}/feedback-dashboard.html`);
   console.log(`  • 局域网地址:   http://${ip}:${PORT}/feedback-dashboard.html`);
   console.log(`  • REST API 根: http://127.0.0.1:${PORT}/api/feedback/`);

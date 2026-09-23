@@ -247,6 +247,19 @@ async function run() {
     collectorJs = collectorJs.replace(/const RUNTIME_MODE = .*;/, `const RUNTIME_MODE = 'hybrid';`);
   }
 
+  // 注入项目专属存储前缀（避免多项目共用浏览器时 localStorage 互相串数据）
+  collectorJs = collectorJs.replace(/const STORAGE_PREFIX = 'fb';/, `const STORAGE_PREFIX = 'fb_${projectId}';`);
+
+  // 项目名在三种模式下都要注入（此前 local 模式漏注入，导出文件名会退化成 default）
+  collectorJs = collectorJs.replace(/const PROJECT_NAME = .*;/, `const PROJECT_NAME = '${projectName}';`);
+
+  // 此前遗漏：SDK 内部的本地端口与远程地址未随项目定制，导致仍连默认 8888
+  const clientRemote = remoteServerUrl || `http://127.0.0.1:${port}`;
+  collectorJs = collectorJs
+    .split('127.0.0.1:8888').join(`127.0.0.1:${port}`)
+    .split('localhost:8888').join(`localhost:${port}`)
+    .split('http://your-server-ip:port').join(clientRemote);
+
   fs.writeFileSync(path.join(targetDir, 'feedback-collector.js'), collectorJs, 'utf-8');
   fs.copyFileSync(path.join(templatesDir, 'client/html2canvas.min.js'), path.join(targetDir, 'html2canvas.min.js'));
   console.log(`  ${c.green}✓${c.reset} 复制前端 SDK: feedback-collector.js & html2canvas.min.js`);
@@ -257,6 +270,7 @@ async function run() {
   dashboardHtml = dashboardHtml.replace(/<h1 style="margin:0;">.*<\/h1>/, `<h1 style="margin:0;">${projectName} · 原型反馈与 Agent 闭环排障中枢</h1>`);
   dashboardHtml = dashboardHtml.replace(/const CURRENT_PROJECT_ID = .*;/, `const CURRENT_PROJECT_ID = '${projectId}';`);
   dashboardHtml = dashboardHtml.replace(/const CURRENT_PROJECT_NAME = .*;/, `const CURRENT_PROJECT_NAME = '${projectName}';`);
+  dashboardHtml = dashboardHtml.replace(/const STORAGE_PREFIX = 'fb';/, `const STORAGE_PREFIX = 'fb_${projectId}';`);
   let remoteHost = "your-server-ip";
   try { remoteHost = new URL(remoteServerUrl).hostname; } catch(e) {}
   dashboardHtml = dashboardHtml
